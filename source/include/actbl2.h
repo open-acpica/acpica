@@ -862,7 +862,8 @@ typedef struct acpi_iort_root_complex
     UINT32                  PciSegmentNumber;
     UINT8                   MemoryAddressLimit;     /* Memory address size limit */
     UINT16                  PasidCapabilities;      /* PASID Capabilities */
-    UINT8                   Reserved[];             /* Reserved, must be zero */
+    UINT8                   Reserved[1];            /* Reserved, must be zero */
+    UINT32                  Flags;                  /* Flags (IORT E.c, RC node revision >= 4) */
 
 } ACPI_IORT_ROOT_COMPLEX;
 
@@ -874,6 +875,9 @@ typedef struct acpi_iort_root_complex
 
 /* Masks for PasidCapabilities field above */
 #define ACPI_IORT_PASID_MAX_WIDTH       (0x1F)  /* Bits 0-4 */
+
+/* Masks for Flags field above */
+#define ACPI_IORT_RC_PASID_SUPPORTED    (1)     /* The root complex PASID support */
 
 typedef struct acpi_iort_smmu
 {
