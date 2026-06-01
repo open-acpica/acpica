@@ -1215,6 +1215,71 @@ AcpiDmDumpMcfg (
 
 /*******************************************************************************
  *
+ * FUNCTION:    AcpiDmDumpMisc
+ *
+ * PARAMETERS:  Table               - A MISC table
+ *
+ * RETURN:      None
+ *
+ * DESCRIPTION: Format the contents of a MISC.
+ *
+ ******************************************************************************/
+
+void
+AcpiDmDumpMisc (
+    ACPI_TABLE_HEADER       *Table)
+{
+    ACPI_STATUS             Status;
+    UINT32                  Length = Table->Length;
+    UINT32                  Offset = sizeof (ACPI_TABLE_HEADER);
+    ACPI_MISC_GUID_ENTRY    *Subtable;
+    UINT32                  SubtableLength;
+
+    Status = AcpiDmDumpTable (Length, 0, Table, 0, AcpiDmTableInfoMisc);
+    if (ACPI_FAILURE (Status))
+    {
+        return;
+    }
+
+    Subtable = ACPI_ADD_PTR (ACPI_MISC_GUID_ENTRY, Table, Offset);
+    while (Offset < Length)
+    {
+        /* Ensure that the entry fields are within the table */
+
+        if ((Length - Offset) < ACPI_MISC_MIN_ENTRY_LENGTH)
+        {
+            AcpiOsPrintf ("Invalid subtable length\n");
+            return;
+        }
+
+        /*
+         * The entry length must cover at least the fixed portion of the
+         * entry and must not extend beyond the end of the table. This must
+         * be validated before the length is used below.
+         */
+        SubtableLength = Subtable->EntryLength;
+        if ((SubtableLength < ACPI_MISC_MIN_ENTRY_LENGTH) ||
+            (SubtableLength > (Length - Offset)))
+        {
+            AcpiOsPrintf ("Invalid EntryLength: 0x%X\n", SubtableLength);
+            return;
+        }
+
+        AcpiOsPrintf ("\n");
+        Status = AcpiDmDumpTable (Length, Offset, Subtable,
+            SubtableLength, AcpiDmTableInfoMisc0);
+        if (ACPI_FAILURE (Status))
+        {
+            return;
+        }
+
+        Offset += SubtableLength;
+        Subtable = ACPI_ADD_PTR (ACPI_MISC_GUID_ENTRY, Subtable, SubtableLength);
+    }
+}
+
+/*******************************************************************************
+ *
  * FUNCTION:    AcpiDmDumpMpam
  *
  * PARAMETERS:  Table               - A MPAM table
