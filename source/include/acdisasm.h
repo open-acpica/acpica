@@ -268,6 +268,7 @@ typedef enum
     ACPI_DMT_ASPT,
     ACPI_DMT_CDAT,
     ACPI_DMT_CEDT,
+    ACPI_DMT_CPAT0,
     ACPI_DMT_DMAR,
     ACPI_DMT_DMAR_SCOPE,
     ACPI_DMT_EINJACT,
@@ -439,6 +440,8 @@ extern ACPI_DMTABLE_INFO        AcpiDmTableInfoCedt1_te[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoCedt2[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoCedt2_te[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoCedt3[];
+extern ACPI_DMTABLE_INFO        AcpiDmTableInfoCpat[];
+extern ACPI_DMTABLE_INFO        AcpiDmTableInfoCpat0[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoCpep[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoCpep0[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoCsrt0[];
@@ -857,6 +860,10 @@ AcpiDmDumpCdat (
 
 void
 AcpiDmDumpCedt (
+    ACPI_TABLE_HEADER       *Table);
+
+void
+AcpiDmDumpCpat (
     ACPI_TABLE_HEADER       *Table);
 
 void
