@@ -741,37 +741,37 @@ AcpiDmDumpTpm2 (
 
 /*******************************************************************************
  *
- * FUNCTION:    AcpiDmDumpTpmc
+ * FUNCTION:    AcpiDmDumpTarp
  *
- * PARAMETERS:  Table               - A TPMC table
+ * PARAMETERS:  Table               - A TARP table
  *
  * RETURN:      None
  *
- * DESCRIPTION: Format the contents of a TPMC table
+ * DESCRIPTION: Format the contents of a TARP table
  *
  ******************************************************************************/
 
 void
-AcpiDmDumpTpmc(
+AcpiDmDumpTarp(
     ACPI_TABLE_HEADER           *Table)
 {
     ACPI_STATUS                 Status;
-    ACPI_TABLE_TPMC             *Subtable;
-    ACPI_TPMC_PFS               *PfsEntry;
+    ACPI_TABLE_TARP             *Subtable;
+    ACPI_TARP_PFS               *PfsEntry;
     UINT32                      Offset;
     UINT32                      i;
 
 
-    /* Main TPMC table */
+    /* Main TARP table */
 
-    Status = AcpiDmDumpTable(Table->Length, 0, Table, 0, AcpiDmTableInfoTpmc);
+    Status = AcpiDmDumpTable(Table->Length, 0, Table, 0, AcpiDmTableInfoTarp);
     if (ACPI_FAILURE(Status))
     {
         return;
     }
 
-    Subtable = ACPI_CAST_PTR(ACPI_TABLE_TPMC, Table);
-    Offset = sizeof(ACPI_TABLE_TPMC);
+    Subtable = ACPI_CAST_PTR(ACPI_TABLE_TARP, Table);
+    Offset = sizeof(ACPI_TABLE_TARP);
 
     /* Dump each PFS entry */
 
@@ -781,23 +781,23 @@ AcpiDmDumpTpmc(
          *   within the table length, issue a warning and exit out
          */       
  
-        if ((Offset + sizeof(ACPI_TPMC_PFS)) > Table->Length)
+        if ((Offset + sizeof(ACPI_TARP_PFS)) > Table->Length)
         {
-            AcpiOsPrintf("**** TPMC: PFS entry %u extends beyond table (Offset 0x%X)\n",
+            AcpiOsPrintf("**** TARP: PFS entry %u extends beyond table (Offset 0x%X)\n",
                 i, Offset);
             return;
         }         
 
-        PfsEntry = ACPI_ADD_PTR(ACPI_TPMC_PFS, Table, Offset);
+        PfsEntry = ACPI_ADD_PTR(ACPI_TARP_PFS, Table, Offset);
 
         Status = AcpiDmDumpTable(Table->Length, Offset, PfsEntry,
-            sizeof(ACPI_TPMC_PFS), AcpiDmTableInfoTpmcPfs);
+            sizeof(ACPI_TARP_PFS), AcpiDmTableInfoTarpPfs);
         if (ACPI_FAILURE(Status))
         {
             return;
         }
 
-        Offset += sizeof(ACPI_TPMC_PFS);
+        Offset += sizeof(ACPI_TARP_PFS);
     }
 }
 

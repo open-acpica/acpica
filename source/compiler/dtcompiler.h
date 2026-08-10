@@ -766,16 +766,16 @@ DtCompileSwft (
     void                    **PFieldList);
 
 ACPI_STATUS
+DtCompileTarp(
+    void                    **List);
+
+ACPI_STATUS
 DtCompileTcpa (
     void                    **PFieldList);
 
 ACPI_STATUS
 DtCompileTpm2 (
     void                    **PFieldList);
-
-ACPI_STATUS
-DtCompileTpmc(
-    void                    **List);
 
 ACPI_STATUS
 DtCompileUefi (
@@ -875,10 +875,10 @@ extern const unsigned char  TemplateSrat[];
 extern const unsigned char  TemplateStao[];
 extern const unsigned char  TemplateSvkl[];
 extern const unsigned char  TemplateSwft[];
+extern const unsigned char  TemplateTarp[];
 extern const unsigned char  TemplateTcpa[];
 extern const unsigned char  TemplateTdel[];
 extern const unsigned char  TemplateTpm2[];
-extern const unsigned char  TemplateTpmc[];
 extern const unsigned char  TemplateUefi[];
 extern const unsigned char  TemplateViot[];
 extern const unsigned char  TemplateWaet[];

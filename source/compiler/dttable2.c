@@ -3135,32 +3135,32 @@ DtCompileTpm2 (
 
 /******************************************************************************
  *
- * FUNCTION:    DtCompileTpmc
+ * FUNCTION:    DtCompileTarp
  *
  * PARAMETERS:  List                - Current field list pointer
  *
  * RETURN:      Status
  *
- * DESCRIPTION: Compile TPMC table
+ * DESCRIPTION: Compile TARP table
  *
  *****************************************************************************/
 
 ACPI_STATUS
-DtCompileTpmc(
+DtCompileTarp(
     void                        **List)
 {
     ACPI_STATUS                 Status = AE_OK;
     DT_SUBTABLE                 *Subtable;
     DT_SUBTABLE                 *ParentTable;
     DT_FIELD                    **PFieldList = (DT_FIELD**) List;
-    ACPI_TABLE_TPMC             *TpmcHeader;
+    ACPI_TABLE_TARP             *TarpHeader;
     UINT32                      EntryCount;
     UINT32                      i;
 
 
-    /* Main TPMC table */
+    /* Main TARP table */
 
-    Status = DtCompileTable(PFieldList, AcpiDmTableInfoTpmc, &Subtable);
+    Status = DtCompileTable(PFieldList, AcpiDmTableInfoTarp, &Subtable);
     if (ACPI_FAILURE(Status))
     {
         return (Status);
@@ -3170,22 +3170,22 @@ DtCompileTpmc(
     DtInsertSubtable(ParentTable, Subtable);
     DtPushSubtable(Subtable);
 
-    TpmcHeader = ACPI_CAST_PTR(ACPI_TABLE_TPMC, Subtable->Buffer);
+    TarpHeader = ACPI_CAST_PTR(ACPI_TABLE_TARP, Subtable->Buffer);
 
-    /*  Since sizeof(TpmcHeader->HeaderSize) returns 8, which is the total size
-     *  of the non-standard TPMC header, we need to add the size of EntryCount
+    /*  Since sizeof(TarpHeader->HeaderSize) returns 8, which is the total size
+     *  of the non-standard TARP header, we need to add the size of EntryCount
      *  field to get the correct offset of 4 bytes to read EntryCount value as 
      *  both these non-standard header fields are the same UINT32 types! 
      */
     EntryCount = *ACPI_CAST_PTR(UINT32, (Subtable->Buffer + 
-                        sizeof(TpmcHeader->EntryCount))); 
+                        sizeof(TarpHeader->EntryCount))); 
 
     /* Compile PFS entries */
     ParentTable = DtPeekSubtable();
 
     for (i = 0; i < EntryCount; i++)
     {
-        Status = DtCompileTable(PFieldList, AcpiDmTableInfoTpmcPfs, &Subtable);
+        Status = DtCompileTable(PFieldList, AcpiDmTableInfoTarpPfs, &Subtable);
         
         if (ACPI_FAILURE(Status))
         {

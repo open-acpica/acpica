@@ -305,8 +305,8 @@ typedef enum
     ACPI_DMT_SRAT,
     ACPI_DMT_SWFT,
     ACPI_DMT_TPM2,
-    ACPI_DMT_TPMC,
-    ACPI_DMT_TPMC_PFS,
+    ACPI_DMT_TARP,
+    ACPI_DMT_TARP_PFS,
     ACPI_DMT_VIOT,
     ACPI_DMT_WPBT_UNICODE,
 
@@ -746,6 +746,8 @@ extern ACPI_DMTABLE_INFO        AcpiDmTableInfoSvkl0[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoSwft[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoSwftFileHdr[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoSwftFileData[];
+extern ACPI_DMTABLE_INFO        AcpiDmTableInfoTarp[];
+extern ACPI_DMTABLE_INFO        AcpiDmTableInfoTarpPfs[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoTcpaHdr[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoTcpaClient[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoTcpaServer[];
@@ -755,8 +757,6 @@ extern ACPI_DMTABLE_INFO        AcpiDmTableInfoTpm2a[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoTpm211[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoTpm23[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoTpm23a[];
-extern ACPI_DMTABLE_INFO        AcpiDmTableInfoTpmc[];
-extern ACPI_DMTABLE_INFO        AcpiDmTableInfoTpmcPfs[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoUefi[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoViot[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoViotHeader[];
@@ -1044,6 +1044,10 @@ AcpiDmDumpSwft (
     ACPI_TABLE_HEADER       *Table);
 
 void
+AcpiDmDumpTarp(
+    ACPI_TABLE_HEADER       *Table);
+
+void
 AcpiDmDumpTcpa (
     ACPI_TABLE_HEADER       *Table);
 
@@ -1053,10 +1057,6 @@ AcpiDmDumpTdel (
 
 void
 AcpiDmDumpTpm2 (
-    ACPI_TABLE_HEADER       *Table);
-
-void
-AcpiDmDumpTpmc(
     ACPI_TABLE_HEADER       *Table);
 
 void

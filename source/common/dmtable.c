@@ -576,13 +576,13 @@ static const char           *AcpiDmTpm2Subnames[] =
     "Unknown Subtable Type"         /* Reserved */
 };
 
-static const char           *AcpiDmTpmcSubnames[] =
+static const char           *AcpiDmTarpSubnames[] =
 {
     "PFS",
     "Unknown Subtable Type"         /* Reserved */
 };
 
-static const char           *AcpiDmTpmcPfsSubnames[] =
+static const char           *AcpiDmTarpPfsSubnames[] =
 {
     "PFS Generic Address Structure",
     "Unknown Subtable Type"         /* Reserved */
@@ -767,10 +767,10 @@ const ACPI_DMTABLE_DATA     AcpiDmTableData[] =
     {ACPI_SIG_STAO, NULL,                   AcpiDmDumpStao, DtCompileStao,  TemplateStao},
     {ACPI_SIG_SVKL, AcpiDmTableInfoSvkl,    AcpiDmDumpSvkl, DtCompileSvkl,  TemplateSvkl},
     {ACPI_SIG_SWFT, AcpiDmTableInfoSwft,    AcpiDmDumpSwft, DtCompileSwft,  TemplateSwft},
+    {ACPI_SIG_TARP, AcpiDmTableInfoTarp,    AcpiDmDumpTarp, DtCompileTarp,  TemplateTarp},
     {ACPI_SIG_TCPA, NULL,                   AcpiDmDumpTcpa, DtCompileTcpa,  TemplateTcpa},
     {ACPI_SIG_TDEL, AcpiDmTableInfoTdel,    NULL,           NULL,           TemplateTdel},
     {ACPI_SIG_TPM2, AcpiDmTableInfoTpm2,    AcpiDmDumpTpm2, DtCompileTpm2,  TemplateTpm2},
-    {ACPI_SIG_TPMC, AcpiDmTableInfoTpmc,    AcpiDmDumpTpmc, DtCompileTpmc,  TemplateTpmc},
     {ACPI_SIG_UEFI, AcpiDmTableInfoUefi,    NULL,           DtCompileUefi,  TemplateUefi},
     {ACPI_SIG_VIOT, AcpiDmTableInfoViot,    AcpiDmDumpViot, DtCompileViot,  TemplateViot},
     {ACPI_SIG_WAET, AcpiDmTableInfoWaet,    NULL,           NULL,           TemplateWaet},
@@ -1193,7 +1193,7 @@ AcpiDmDumpTable (
         case ACPI_DMT_DMAR_SCOPE:
         case ACPI_DMT_IOVTDEV:
         case ACPI_DMT_VIOT:
-        case ACPI_DMT_TPMC_PFS:
+        case ACPI_DMT_TARP_PFS:
 
             ByteLength = 1;
             break;
@@ -1224,7 +1224,7 @@ AcpiDmDumpTable (
         case ACPI_DMT_SIG:
         case ACPI_DMT_LPIT:
         case ACPI_DMT_TPM2:
-        case ACPI_DMT_TPMC: 
+        case ACPI_DMT_TARP: 
 
             ByteLength = 4;
             break;
@@ -2171,32 +2171,32 @@ AcpiDmDumpTable (
                 AcpiDmTpm2Subnames[Temp8]);
             break;
 
-        case ACPI_DMT_TPMC:
+        case ACPI_DMT_TARP:
 
-            /* TPMC Start Method types */
+            /* TARP Start Method types */
 
             Temp32 = ACPI_GET32 (Target);
-            if (Temp32 > ACPI_TPMC_RESERVED)
+            if (Temp32 > ACPI_TARP_RESERVED)
             {
-                Temp32 = ACPI_TPMC_RESERVED;
+                Temp32 = ACPI_TARP_RESERVED;
             }
 
             AcpiOsPrintf(UINT32_FORMAT, ACPI_GET32 (Target),
-                AcpiDmTpmcSubnames[Temp32]);
+                AcpiDmTarpSubnames[Temp32]);
             break;
 
-        case ACPI_DMT_TPMC_PFS:
+        case ACPI_DMT_TARP_PFS:
 
-            /* TPMC PFS Start Method types */
+            /* TARP PFS Start Method types */
 
             Temp8 = *Target;
-            if (Temp8 > ACPI_TPMC_PFS_RESERVED)
+            if (Temp8 > ACPI_TARP_PFS_RESERVED)
             {
-                Temp8 = ACPI_TPMC_PFS_RESERVED;
+                Temp8 = ACPI_TARP_PFS_RESERVED;
             }
 
             AcpiOsPrintf(UINT8_FORMAT, *Target,
-                AcpiDmTpmcPfsSubnames[Temp8]);
+                AcpiDmTarpPfsSubnames[Temp8]);
             break;
 
 
