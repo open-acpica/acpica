@@ -1633,14 +1633,14 @@ DtCompileDtpr (
 
     DtInsertSubtable (ParentTable, Subtable);
 
-    Dtpr = ACPI_SUB_PTR (ACPI_TABLE_DTPR, Subtable->Buffer,
-                         sizeof (ACPI_TABLE_HEADER));
-    if (!Dtpr)
+    if (!Subtable->Buffer)
     {
         AcpiOsPrintf ("DTPR buffer pointer is NULL\n");
         return (AE_NULL_OBJECT);
     }
 
+    Dtpr = ACPI_SUB_PTR (ACPI_TABLE_DTPR, Subtable->Buffer,
+                         sizeof (ACPI_TABLE_HEADER));
     InsCnt = Dtpr->InsCnt;
 
     while (*PFieldList)
