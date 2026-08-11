@@ -562,6 +562,7 @@ AcpiInstallMethod (
     /* First AML opcode in the table must be a control method */
 
     ParserState.Aml = Buffer + sizeof (ACPI_TABLE_HEADER);
+    ParserState.AmlEnd = Buffer + Table->Length;
     Opcode = AcpiPsPeekOpcode (&ParserState);
     if (Opcode != AML_METHOD_OP)
     {
