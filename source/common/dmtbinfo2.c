@@ -2655,7 +2655,7 @@ ACPI_DMTABLE_INFO           AcpiDmTableInfoUbrt[] =
 
 ACPI_DMTABLE_INFO           AcpiDmTableInfoUbrtSubtable[] =
 {
-    {ACPI_DMT_UINT8,    ACPI_UBRTS_OFFSET (Type),                   "Sub-table Type", 0},
+    {ACPI_DMT_UBRT,     ACPI_UBRTS_OFFSET (Type),                   "Sub-table Type", 0},
     {ACPI_DMT_BUF7,     ACPI_UBRTS_OFFSET (Reserved[0]),            "Reserved", 0},
     {ACPI_DMT_UINT64,   ACPI_UBRTS_OFFSET (Pointer),                "Sub-table Physical Address", 0},
     ACPI_DMT_TERMINATOR

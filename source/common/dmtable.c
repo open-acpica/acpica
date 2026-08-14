@@ -265,6 +265,14 @@ static const char           *AcpiDmCedtSubnames[] =
     "Unknown Subtable Type"         /* Reserved */
 };
 
+static const char           *AcpiDmUbrtSubnames[] =
+{
+    "UBC Information Subtable",
+    "UMMU Information Subtable",
+    "UB Reserved Memory Information Subtable",
+    "Unknown Subtable Type"
+};
+
 static const char           *AcpiDmDmarSubnames[] =
 {
     "Hardware Unit Definition",
@@ -1154,6 +1162,7 @@ AcpiDmDumpTable (
         case ACPI_DMT_SPACEID:
         case ACPI_DMT_ACCWIDTH:
         case ACPI_DMT_CEDT:
+        case ACPI_DMT_UBRT:
         case ACPI_DMT_IVRS:
         case ACPI_DMT_IVRS_DE:
         case ACPI_DMT_GTDT:
@@ -1770,6 +1779,20 @@ AcpiDmDumpTable (
 
             AcpiOsPrintf (UINT8_FORMAT, *Target,
                 AcpiDmCedtSubnames[Temp8]);
+            break;
+
+        case ACPI_DMT_UBRT:
+
+            /* UBRT subtable types */
+
+            Temp8 = *Target;
+            if (Temp8 > ACPI_UBRT_TYPE_RESERVED_MEM)
+            {
+                Temp8 = ACPI_UBRT_TYPE_RESERVED_MEM + 1;
+            }
+
+            AcpiOsPrintf (UINT8_FORMAT, *Target,
+                AcpiDmUbrtSubnames[Temp8]);
             break;
 
         case ACPI_DMT_DMAR:
