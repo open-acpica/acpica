@@ -104,6 +104,7 @@
 #define ACPI_PREDEFINED_NAME            (ACPI_UINT32_MAX - 1)
 #define ACPI_EVENT_RESERVED_NAME        (ACPI_UINT32_MAX - 2)
 #define ACPI_COMPILER_RESERVED_NAME     (ACPI_UINT32_MAX - 3)
+#define ACPI_EVENT_OBJECT_RESERVED_NAME (ACPI_UINT32_MAX - 4)
 
 
 /* Helper macros for resource tag creation */

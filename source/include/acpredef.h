@@ -161,6 +161,7 @@ enum AcpiReturnPackageTypes
  *              _Qxx EC methods
  *              _T_x compiler temporary variables
  *              _Wxx wake events
+ *              _Ixx indicator for GPEs in low power S0 idle state
  *
  *      2) Predefined names that never actually exist within the AML code:
  *              Predefined resource descriptor field names

@@ -149,6 +149,7 @@ const AH_PREDEFINED_NAME    AslPredefinedInfo[] =
     AH_PREDEF ("_INT",    "Interrupts", "Interrupt mask bits, Resource Descriptor field"),
     AH_PREDEF ("_IOR",    "I/O Restriction", "Restriction type, Resource Descriptor field"),
     AH_PREDEF ("_IRC",    "Inrush Current", "Presence indicates that a device has a significant inrush current draw"),
+    AH_PREDEF ("_Ixx",    "Low Power S0 Idle, xx=0x00-0xFF", "Indication whether specific GPEs should be enabled in low power S0 idle state."),
     AH_PREDEF ("_Lxx",    "Level-Triggered GPE, xx=0x00-0xFF", "Control method executed as a result of a general-purpose event"),
     AH_PREDEF ("_LCK",    "Lock Device", "Locks or unlocks a device (docking)"),
     AH_PREDEF ("_LEN",    "Length", "Range length, Resource Descriptor field"),
