@@ -76,11 +76,12 @@ ApCheckForPredefinedMethod (
         return (FALSE);
 
 
-    case ACPI_EVENT_RESERVED_NAME:      /* _Lxx/_Exx/_Wxx/_Qxx methods */
+    case ACPI_EVENT_RESERVED_NAME:          /* _Lxx/_Exx/_Wxx/_Qxx methods */
+    case ACPI_EVENT_OBJECT_RESERVED_NAME:   /* _Ixx object */
 
         AslGbl_ReservedMethods++;
 
-        /* NumArguments must be zero for all _Lxx/_Exx/_Wxx/_Qxx methods */
+        /* NumArguments must be zero for all _Lxx/_Exx/_Wxx/_Ixx/_Qxx methods */
 
         if (MethodInfo->NumArguments != 0)
         {
@@ -234,7 +235,8 @@ ApCheckPredefinedReturnValue (
 
     switch (Index)
     {
-    case ACPI_EVENT_RESERVED_NAME:      /* _Lxx/_Exx/_Wxx/_Qxx methods */
+    case ACPI_EVENT_RESERVED_NAME:          /* _Lxx/_Exx/_Wxx/_Qxx methods */
+    case ACPI_EVENT_OBJECT_RESERVED_NAME:   /* _Ixx object */
 
         /* No return value expected, warn if there is one */
 
@@ -335,9 +337,10 @@ ApCheckForPredefinedObject (
 
     switch (Index)
     {
-    case ACPI_NOT_RESERVED_NAME:        /* No underscore or _Txx or _xxx name not matched */
-    case ACPI_PREDEFINED_NAME:          /* Resource Name or reserved scope name */
-    case ACPI_COMPILER_RESERVED_NAME:   /* A _Txx that was not emitted by compiler */
+    case ACPI_NOT_RESERVED_NAME:            /* No underscore or _Txx or _xxx name not matched */
+    case ACPI_PREDEFINED_NAME:              /* Resource Name or reserved scope name */
+    case ACPI_COMPILER_RESERVED_NAME:       /* A _Txx that was not emitted by compiler */
+    case ACPI_EVENT_OBJECT_RESERVED_NAME:   /* _Ixx object */
 
         /* Nothing to do */
         return;
@@ -473,7 +476,7 @@ ApCheckForPredefinedName (
         ThisName++;
     }
 
-    /* Check for _Lxx/_Exx/_Wxx/_Qxx/_T_x. Warning if unknown predefined name */
+    /* Check for _Lxx/_Exx/_Wxx/_Ixx/_Qxx/_T_x. Warning if unknown predefined name */
 
     return (ApCheckForSpecialName (Op, Name));
 }
@@ -489,7 +492,7 @@ ApCheckForPredefinedName (
  * RETURN:      None
  *
  * DESCRIPTION: Check for the "special" predefined names -
- *              _Lxx, _Exx, _Qxx, _Wxx, and _T_x
+ *              _Lxx, _Exx, _Qxx, _Ixx, _Wxx, and _T_x
  *
  ******************************************************************************/
 
@@ -505,6 +508,7 @@ ApCheckForSpecialName (
      *   GPE:  _Lxx
      *   GPE:  _Exx
      *   GPE:  _Wxx
+     *   GPE:  _Ixx
      *   EC:   _Qxx
      */
     if ((Name[1] == 'L') ||
@@ -519,6 +523,18 @@ ApCheckForSpecialName (
         {
             return (ACPI_EVENT_RESERVED_NAME);
         }
+    }
+
+    /*
+     * Return an object reserved name type since _Ixx is just required to be an
+     * 'object' not necessarily a control method to indicate that a GPE is to be
+     * enabled in LPS0 idle state
+     */
+    else if ((Name[1] == 'I') &&
+        ((isxdigit ((int) Name[2])) &&
+        (isxdigit ((int) Name[3]))))
+    {
+        return (ACPI_EVENT_OBJECT_RESERVED_NAME);
     }
 
     /* Check for the names reserved for the compiler itself: _T_x */

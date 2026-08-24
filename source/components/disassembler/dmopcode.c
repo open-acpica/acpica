@@ -239,7 +239,7 @@ AcpiDmPredefinedDescription (
 
     /*
      * Check for the special ACPI names:
-     * _ACd, _ALd, _EJd, _Exx, _Lxx, _Qxx, _Wxx, _T_a
+     * _ACd, _ALd, _EJd, _Exx, _Lxx, _Qxx, _Wxx, _Ixx, _T_a
      * (where d=decimal_digit, x=hex_digit, a=anything)
      *
      * Convert these to the generic name for table lookup.
@@ -274,6 +274,14 @@ AcpiDmPredefinedDescription (
         else if (LastCharsAreHex)
         {
             NameString = "_Exx";
+        }
+        break;
+
+    case 'I':
+
+        if (LastCharsAreHex)
+        {
+            NameString = "_Ixx";
         }
         break;
 

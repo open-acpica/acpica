@@ -217,6 +217,7 @@ AhFindPredefinedNames (
  *  _Exx
  *  _Lxx
  *  _Qxx
+ *  _Ixx
  *  _Wxx
  *  _ACx
  *  _ALx
@@ -253,11 +254,12 @@ AhDoSpecialNames (
     case 'L':
     case 'Q':
     case 'W':
+    case 'I':
         if ((isxdigit ((int) Name[2]) && isxdigit ((int) Name[3]))
                 ||
             ((Name[2] == 'X') && (Name[3] == 'X')))
         {
-            /* _Exx, _Lxx, _Qxx, or _Wxx */
+            /* _Exx, _Lxx, _Qxx, _Ixx or _Wxx */
 
             Name[2] = 'x';
             Name[3] = 'x';
