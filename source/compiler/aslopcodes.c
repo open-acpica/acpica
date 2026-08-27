@@ -723,6 +723,31 @@ OpcGenerateAmlOpcode (
     UINT16                  Index;
 
 
+    switch (Op->Asl.ParseOpcode)
+    {
+    case PARSEOP_PRINTF:
+
+        OpcDoPrintf (Op);
+        if (Op->Asl.ParseOpcode == PARSEOP_PRINTF)
+        {
+            return;
+        }
+        break;
+
+    case PARSEOP_FPRINTF:
+
+        OpcDoFprintf (Op);
+        if (Op->Asl.ParseOpcode == PARSEOP_FPRINTF)
+        {
+            return;
+        }
+        break;
+
+    default:
+
+        break;
+    }
+
     Index = (UINT16) (Op->Asl.ParseOpcode - ASL_PARSE_OPCODE_BASE);
 
     if ((Op->Asl.ParseOpcode < ASL_PARSE_OPCODE_BASE) ||
@@ -798,16 +823,6 @@ OpcGenerateAmlOpcode (
     case PARSEOP_EISAID:
 
         OpcDoEisaId (Op);
-        break;
-
-    case PARSEOP_PRINTF:
-
-        OpcDoPrintf (Op);
-        break;
-
-    case PARSEOP_FPRINTF:
-
-        OpcDoFprintf (Op);
         break;
 
     case PARSEOP_TOPLD:
