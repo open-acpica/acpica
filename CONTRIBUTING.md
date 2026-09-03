@@ -55,9 +55,9 @@ follow the style of the existing code when modifying it.
 
 ## Testing
 
-Every contribution is expected to be tested by it submitter.  The level of
+Every contribution is expected to be tested by its submitter.  The level of
 testing that is adequate for a given change generally depends on how complex
-and intrusive the change is, but it also depends on what componentes are
+and intrusive the change is, but it also depends on what components are
 affected.  For example, changes that only affect the ASL compiler and changes
 that only affect the AML interpreter generally need to be tested differently.
 
