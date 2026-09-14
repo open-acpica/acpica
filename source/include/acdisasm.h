@@ -481,6 +481,9 @@ extern ACPI_DMTABLE_INFO        AcpiDmTableInfoMadtHdr[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoMcfg[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoMcfg0[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoMchi[];
+extern ACPI_DMTABLE_INFO        AcpiDmTableInfoMisc[];
+extern ACPI_DMTABLE_INFO        AcpiDmTableInfoMisc0[];
+extern ACPI_DMTABLE_INFO        AcpiDmTableInfoMisc0Data[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoMpam0[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoMpam1[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoMpam1A[];
@@ -802,6 +805,10 @@ AcpiDmDumpMadt (
 
 void
 AcpiDmDumpMcfg (
+    ACPI_TABLE_HEADER       *Table);
+
+void
+AcpiDmDumpMisc (
     ACPI_TABLE_HEADER       *Table);
 
 void
