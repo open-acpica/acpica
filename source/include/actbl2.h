@@ -1341,6 +1341,7 @@ typedef struct acpi_keyp_common_header {
 enum AcpiKeypType
 {
     ACPI_KEYP_TYPE_CONFIG_UNIT      = 0,
+    ACPI_KEYP_TYPE_RESERVED         = 1,
 };
 
 /* Root Port Information Structure */
@@ -1370,6 +1371,10 @@ enum AcpiKeypProtocolType
     ACPI_KEYP_PROTO_TYPE_CXL,
     ACPI_KEYP_PROTO_TYPE_RESERVED
 };
+
+/* Only version 1 of the KCU Structure is currently defined in the spec*/
+
+#define ACPI_KEYP_CONFIG_UNIT_VERSION   1
 
 #define ACPI_KEYP_F_TVM_USABLE      (1)
 
