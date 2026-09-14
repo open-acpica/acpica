@@ -1273,6 +1273,20 @@ AcpiDmDumpMisc (
             return;
         }
 
+        /* Dump the vendor data (optional) */
+
+        if (SubtableLength > ACPI_MISC_MIN_ENTRY_LENGTH)
+        {
+            Status = AcpiDmDumpTable (Length,
+                Offset + ACPI_MISC_MIN_ENTRY_LENGTH, Subtable->Data,
+                SubtableLength - ACPI_MISC_MIN_ENTRY_LENGTH,
+                AcpiDmTableInfoMisc0Data);
+            if (ACPI_FAILURE (Status))
+            {
+                return;
+            }
+        }
+
         Offset += SubtableLength;
         Subtable = ACPI_ADD_PTR (ACPI_MISC_GUID_ENTRY, Subtable, SubtableLength);
     }

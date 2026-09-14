@@ -1184,26 +1184,6 @@ AcpiDmDumpTable (
                             ACPI_CAST_PTR (char, Target));
             break;
 
-        case ACPI_DMT_MISC_DATA:
-            /*
-             * Calculate the length of the vendor data for the MISC table:
-             * Length = (Current Subtable ptr + EntryLength) -
-             *          Start of the vendor data (Target)
-             *
-             * Validate EntryLength first - a value smaller than the entry
-             * header would underflow the length computation below.
-             */
-            Temp32 = ACPI_CAST_PTR (ACPI_MISC_GUID_ENTRY, Table)->EntryLength;
-            if (Temp32 < ACPI_MISC_MIN_ENTRY_LENGTH)
-            {
-                AcpiOsPrintf ("Invalid EntryLength: 0x%X\n", Temp32);
-                return (AE_BAD_DATA);
-            }
-
-            ByteLength = ((ACPI_CAST_PTR (char, Table) + Temp32) -
-                            ACPI_CAST_PTR (char, Target));
-            break;
-
         case ACPI_DMT_STRING:
 
             ByteLength = strlen (ACPI_CAST_PTR (char, Target)) + 1;
@@ -1968,7 +1948,6 @@ AcpiDmDumpTable (
         case ACPI_DMT_RAW_BUFFER:
         case ACPI_DMT_BUFFER:
         case ACPI_DMT_PMTT_VENDOR:
-        case ACPI_DMT_MISC_DATA:
 
             if (ByteLength == 0)
             {
