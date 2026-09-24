@@ -576,6 +576,53 @@ ACPI_DMTABLE_INFO           AcpiDmTableInfoIvrsCidInteger[] =
 
 /*******************************************************************************
  *
+ * KEYP - Key Programming Interface for Root Complex Integrity and Data
+ *        Encryption (IDE)
+ *
+ ******************************************************************************/
+
+ACPI_DMTABLE_INFO           AcpiDmTableInfoKeyp[] =
+{
+    {ACPI_DMT_UINT32,   ACPI_KEYP_OFFSET (Reserved),                "Reserved", 0},
+    ACPI_DMT_TERMINATOR
+};
+
+/* Common Key Configuration Unit subtable header */
+
+ACPI_DMTABLE_INFO           AcpiDmTableInfoKeypHdr[] =
+{
+    {ACPI_DMT_KEYP,     ACPI_KEYPH_OFFSET (Type),                   "Type", 0},
+    {ACPI_DMT_UINT8,    ACPI_KEYPH_OFFSET (Reserved),               "Reserved", 0},
+    {ACPI_DMT_UINT16,   ACPI_KEYPH_OFFSET (Length),                 "Length", DT_LENGTH},
+    ACPI_DMT_TERMINATOR
+};
+
+/* 0: Key Configuration Unit Structure */
+
+ACPI_DMTABLE_INFO           AcpiDmTableInfoKeyp0[] =
+{
+    {ACPI_DMT_UINT8,    ACPI_KEYP0_OFFSET (ProtocolType),           "Protocol Type", 0},
+    {ACPI_DMT_UINT8,    ACPI_KEYP0_OFFSET (Version),                "Version", 0},
+    {ACPI_DMT_UINT8,    ACPI_KEYP0_OFFSET (RootPortCount),          "Root Port Count", 0},
+    {ACPI_DMT_UINT8,    ACPI_KEYP0_OFFSET (Flags),                  "Flags (decoded below)", DT_FLAG},
+    {ACPI_DMT_FLAG0,    ACPI_KEYP0_OFFSET (Flags),                  "TVM Usable", 0},
+    {ACPI_DMT_UINT64,   ACPI_KEYP0_OFFSET (RegisterBaseAddress),    "Register Base Address", 0},
+    ACPI_DMT_TERMINATOR
+};
+
+/* Root Port Information Structure */
+
+ACPI_DMTABLE_INFO           AcpiDmTableInfoKeyp0a[] =
+{
+    {ACPI_DMT_UINT16,   ACPI_KEYP0A_OFFSET (Segment),               "Segment", 0},
+    {ACPI_DMT_UINT8,    ACPI_KEYP0A_OFFSET (Bus),                   "Bus", 0},
+    {ACPI_DMT_UINT8,    ACPI_KEYP0A_OFFSET (Devfn),                 "Device/Function", 0},
+    ACPI_DMT_TERMINATOR
+};
+
+
+/*******************************************************************************
+ *
  * LPIT - Low Power Idle Table
  *
  ******************************************************************************/
@@ -1162,6 +1209,36 @@ ACPI_DMTABLE_INFO           AcpiDmTableInfoMchi[] =
     {ACPI_DMT_UINT8,    ACPI_MCHI_OFFSET (PciBus),                  "Pci Bus", 0},
     {ACPI_DMT_UINT8,    ACPI_MCHI_OFFSET (PciDevice),               "Pci Device", 0},
     {ACPI_DMT_UINT8,    ACPI_MCHI_OFFSET (PciFunction),             "Pci Function", 0},
+    ACPI_DMT_TERMINATOR
+};
+
+/*******************************************************************************
+ *
+ * MISC - Miscellaneous GUIDed Table
+ *
+ ******************************************************************************/
+
+ACPI_DMTABLE_INFO           AcpiDmTableInfoMisc[] =
+{
+    ACPI_DMT_TERMINATOR
+};
+
+/* GUIDed Entries */
+
+ACPI_DMTABLE_INFO           AcpiDmTableInfoMisc0[] =
+{
+    {ACPI_DMT_UUID,     ACPI_MISC0_OFFSET (EntryGuid[0]),          "Entry GUID", 0},
+    {ACPI_DMT_UINT32,   ACPI_MISC0_OFFSET (EntryLength),           "Entry Length", DT_LENGTH},
+    {ACPI_DMT_UINT32,   ACPI_MISC0_OFFSET (Revision),              "Revision", 0},
+    {ACPI_DMT_NAME4,    ACPI_MISC0_OFFSET (ProducerId[0]),         "Producer ID", 0},
+    ACPI_DMT_TERMINATOR
+};
+
+/* Optional vendor data field */
+
+ACPI_DMTABLE_INFO           AcpiDmTableInfoMisc0Data[] =
+{
+    {ACPI_DMT_RAW_BUFFER, 0,                                       "Vendor Data", DT_OPTIONAL},
     ACPI_DMT_TERMINATOR
 };
 

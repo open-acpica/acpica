@@ -372,6 +372,76 @@ DtCompileMcfg (
 
 /******************************************************************************
  *
+ * FUNCTION:    DtCompileMisc
+ *
+ * PARAMETERS:  List                - Current field list pointer
+ *
+ * RETURN:      Status
+ *
+ * DESCRIPTION: Compile MISC.
+ *
+ *****************************************************************************/
+
+ACPI_STATUS
+DtCompileMisc (
+    void                    **List)
+{
+    DT_FIELD                **PFieldList = (DT_FIELD **) List;
+    DT_SUBTABLE             *Subtable;
+    DT_SUBTABLE             *EntryTable;
+    DT_SUBTABLE             *ParentTable;
+    ACPI_STATUS             Status;
+
+    Status = DtCompileTable (PFieldList, AcpiDmTableInfoMisc,
+        &Subtable);
+    if (ACPI_FAILURE (Status))
+    {
+        return (Status);
+    }
+
+    ParentTable = DtPeekSubtable ();
+    DtInsertSubtable (ParentTable, Subtable);
+
+    /* Subtables (GUIDed Entries) */
+
+    while (*PFieldList)
+    {
+        Status = DtCompileTable (PFieldList, AcpiDmTableInfoMisc0,
+            &Subtable);
+        if (ACPI_FAILURE (Status))
+        {
+            return (Status);
+        }
+
+        DtInsertSubtable (ParentTable, Subtable);
+        EntryTable = Subtable;
+
+        /* Optional vendor data - the entry may carry no data at all */
+
+        Status = DtCompileTable (PFieldList, AcpiDmTableInfoMisc0Data,
+            &Subtable);
+        if (Status == AE_END_OF_TABLE)
+        {
+            /* The optional field was absent and this was the last entry */
+
+            break;
+        }
+        else if (ACPI_FAILURE (Status))
+        {
+            return (Status);
+        }
+
+        if (Subtable)
+        {
+            DtInsertSubtable (EntryTable, Subtable);
+        }
+    }
+
+    return (AE_OK);
+}
+
+/******************************************************************************
+ *
  * FUNCTION:    DtCompileMpam
  *
  * PARAMETERS:  List                - Current field list pointer

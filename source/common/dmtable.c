@@ -486,6 +486,12 @@ static const char           *AcpiDmIvrsDevEntryNames[] =
     "Unknown/Reserved Device Entry Type"        /* Reserved */
 };
 
+static const char           *AcpiDmKeypSubnames[] =
+{
+    "Key Configuration Unit Structure",
+    "Unknown Subtable Type"         /* Reserved */
+};
+
 static const char           *AcpiDmLpitSubnames[] =
 {
     "Native C-state Idle Structure",
@@ -589,10 +595,12 @@ const ACPI_DMTABLE_DATA     AcpiDmTableData[] =
     {ACPI_SIG_IORT, NULL,                   AcpiDmDumpIort, DtCompileIort,  TemplateIort},
     {ACPI_SIG_IOVT, AcpiDmTableInfoIovt,    AcpiDmDumpIovt, DtCompileIovt,  TemplateIovt},
     {ACPI_SIG_IVRS, NULL,                   AcpiDmDumpIvrs, DtCompileIvrs,  TemplateIvrs},
+    {ACPI_SIG_KEYP, NULL,                   AcpiDmDumpKeyp, DtCompileKeyp,  TemplateKeyp},
     {ACPI_SIG_LPIT, NULL,                   AcpiDmDumpLpit, DtCompileLpit,  TemplateLpit},
     {ACPI_SIG_MADT, NULL,                   AcpiDmDumpMadt, DtCompileMadt,  TemplateMadt},
     {ACPI_SIG_MCFG, NULL,                   AcpiDmDumpMcfg, DtCompileMcfg,  TemplateMcfg},
     {ACPI_SIG_MCHI, AcpiDmTableInfoMchi,    NULL,           NULL,           TemplateMchi},
+    {ACPI_SIG_MISC, NULL,                   AcpiDmDumpMisc, DtCompileMisc,  TemplateMisc},
     {ACPI_SIG_MPAM, NULL,                   AcpiDmDumpMpam, DtCompileMpam,  TemplateMpam},
     {ACPI_SIG_MPST, AcpiDmTableInfoMpst,    AcpiDmDumpMpst, DtCompileMpst,  TemplateMpst},
     {ACPI_SIG_MRRM, NULL,                   AcpiDmDumpMrrm, DtCompileMrrm,  TemplateMrrm},
@@ -1027,6 +1035,7 @@ AcpiDmDumpTable (
         case ACPI_DMT_IVRS:
         case ACPI_DMT_IVRS_DE:
         case ACPI_DMT_GTDT:
+        case ACPI_DMT_KEYP:
         case ACPI_DMT_MADT:
         case ACPI_DMT_MPAM_LOCATOR:
         case ACPI_DMT_PCCT:
@@ -1641,6 +1650,20 @@ AcpiDmDumpTable (
 
             AcpiOsPrintf (UINT8_FORMAT, *Target,
                 AcpiDmCedtSubnames[Temp8]);
+            break;
+
+        case ACPI_DMT_KEYP:
+
+            /* KEYP subtable types */
+
+            Temp8 = *Target;
+            if (Temp8 > ACPI_KEYP_TYPE_RESERVED)
+            {
+                Temp8 = ACPI_KEYP_TYPE_RESERVED;
+            }
+
+            AcpiOsPrintf (UINT8_FORMAT, *Target,
+                AcpiDmKeypSubnames[Temp8]);
             break;
 
         case ACPI_DMT_DMAR:

@@ -149,6 +149,7 @@ typedef enum
     ACPI_DMT_IVRS,
     ACPI_DMT_IVRS_DE,
     ACPI_DMT_IVRS_UNTERMINATED_STRING,
+    ACPI_DMT_KEYP,
     ACPI_DMT_LPIT,
     ACPI_DMT_MADT,
     ACPI_DMT_MPAM_LOCATOR,
@@ -440,6 +441,10 @@ extern ACPI_DMTABLE_INFO        AcpiDmTableInfoIvrsUidString[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoIvrsUidInteger[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoIvrsHidString[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoIvrsHidInteger[];
+extern ACPI_DMTABLE_INFO        AcpiDmTableInfoKeyp[];
+extern ACPI_DMTABLE_INFO        AcpiDmTableInfoKeypHdr[];
+extern ACPI_DMTABLE_INFO        AcpiDmTableInfoKeyp0[];
+extern ACPI_DMTABLE_INFO        AcpiDmTableInfoKeyp0a[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoMadt[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoMadt0[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoMadt1[];
@@ -481,6 +486,9 @@ extern ACPI_DMTABLE_INFO        AcpiDmTableInfoMadtHdr[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoMcfg[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoMcfg0[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoMchi[];
+extern ACPI_DMTABLE_INFO        AcpiDmTableInfoMisc[];
+extern ACPI_DMTABLE_INFO        AcpiDmTableInfoMisc0[];
+extern ACPI_DMTABLE_INFO        AcpiDmTableInfoMisc0Data[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoMpam0[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoMpam1[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoMpam1A[];
@@ -793,6 +801,10 @@ AcpiDmDumpIvrs (
     ACPI_TABLE_HEADER       *Table);
 
 void
+AcpiDmDumpKeyp (
+    ACPI_TABLE_HEADER       *Table);
+
+void
 AcpiDmDumpLpit (
     ACPI_TABLE_HEADER       *Table);
 
@@ -802,6 +814,10 @@ AcpiDmDumpMadt (
 
 void
 AcpiDmDumpMcfg (
+    ACPI_TABLE_HEADER       *Table);
+
+void
+AcpiDmDumpMisc (
     ACPI_TABLE_HEADER       *Table);
 
 void

@@ -784,6 +784,164 @@ NextSubtable:
 
 /*******************************************************************************
  *
+ * FUNCTION:    AcpiDmDumpKeyp
+ *
+ * PARAMETERS:  Table               - A KEYP table
+ *
+ * RETURN:      None
+ *
+ * DESCRIPTION: Format the contents of a KEYP. This table consists of the
+ *              main table followed by an open-ended number of Key
+ *              Configuration Unit subtables, each of which is followed by a
+ *              variable-length array of Root Port Information structures.
+ *
+ ******************************************************************************/
+
+void
+AcpiDmDumpKeyp (
+    ACPI_TABLE_HEADER       *Table)
+{
+    ACPI_STATUS             Status;
+    ACPI_KEYP_COMMON_HEADER *Subtable;
+    ACPI_KEYP_CONFIG_UNIT   *ConfigUnit;
+    UINT32                  Length = Table->Length;
+    UINT32                  Offset = sizeof (ACPI_TABLE_KEYP);
+    UINT32                  SubtableLength;
+    UINT32                  RootPortLength;
+    UINT32                  RpOffset;
+    UINT32                  i;
+
+
+    /* Main table */
+
+    Status = AcpiDmDumpTable (Length, 0, Table, 0, AcpiDmTableInfoKeyp);
+    if (ACPI_FAILURE (Status))
+    {
+        return;
+    }
+
+    /* Subtables - Key Configuration Unit structures */
+
+    while (Offset < Table->Length)
+    {
+        /* Common subtable header */
+
+        Subtable = ACPI_ADD_PTR (ACPI_KEYP_COMMON_HEADER, Table, Offset);
+        SubtableLength = Table->Length - Offset;
+        if (SubtableLength < sizeof (ACPI_KEYP_COMMON_HEADER))
+        {
+            AcpiOsPrintf ("Invalid KEYP subtable header length\n");
+            return;
+        }
+
+        AcpiOsPrintf ("\n");
+        Status = AcpiDmDumpTable (Length, Offset, Subtable,
+            sizeof (ACPI_KEYP_COMMON_HEADER), AcpiDmTableInfoKeypHdr);
+        if (ACPI_FAILURE (Status))
+        {
+            return;
+        }
+
+        if ((Subtable->Length < sizeof (ACPI_KEYP_COMMON_HEADER)) ||
+            (Subtable->Length > SubtableLength))
+        {
+            AcpiOsPrintf ("Invalid KEYP subtable length\n");
+            return;
+        }
+
+        switch (Subtable->Type)
+        {
+        case ACPI_KEYP_TYPE_CONFIG_UNIT:
+
+            ConfigUnit = ACPI_CAST_PTR (ACPI_KEYP_CONFIG_UNIT, Subtable);
+
+            if (Subtable->Length < sizeof (ACPI_KEYP_CONFIG_UNIT))
+            {
+                AcpiOsPrintf ("Invalid KEYP config unit length\n");
+                return;
+            }
+
+            /* At least one Root Port Information structure is required */
+
+            if (ConfigUnit->RootPortCount == 0)
+            {
+                AcpiOsPrintf ("Invalid zero KEYP root port count\n");
+                return;
+            }
+
+            RootPortLength = Subtable->Length - sizeof (ACPI_KEYP_CONFIG_UNIT);
+            if (RootPortLength % sizeof (ACPI_KEYP_RP_INFO))
+            {
+                AcpiOsPrintf ("Invalid KEYP root port array size\n");
+                return;
+            }
+
+            if ((((UINT32) ConfigUnit->RootPortCount) * sizeof (ACPI_KEYP_RP_INFO)) !=
+                RootPortLength)
+            {
+                AcpiOsPrintf ("Invalid KEYP root port array length\n");
+                return;
+            }
+
+            AcpiOsPrintf ("\n");
+            Status = AcpiDmDumpTable (Length, Offset, Subtable,
+                Subtable->Length, AcpiDmTableInfoKeyp0);
+            if (ACPI_FAILURE (Status))
+            {
+                return;
+            }
+
+            /*
+             * Note reserved/unsupported values, but continue the dump. These
+             * fields do not affect the layout of the table.
+             */
+            if ((ConfigUnit->ProtocolType < ACPI_KEYP_PROTO_TYPE_PCIE) ||
+                (ConfigUnit->ProtocolType >= ACPI_KEYP_PROTO_TYPE_RESERVED))
+            {
+                AcpiOsPrintf ("\n**** Reserved KEYP protocol type 0x%X\n",
+                    ConfigUnit->ProtocolType);
+            }
+
+            if (ConfigUnit->Version != ACPI_KEYP_CONFIG_UNIT_VERSION)
+            {
+                AcpiOsPrintf ("\n**** Unsupported KEYP config unit version 0x%X\n",
+                    ConfigUnit->Version);
+            }
+
+            /* Root Port Information structures */
+
+            RpOffset = Offset + sizeof (ACPI_KEYP_CONFIG_UNIT);
+            for (i = 0; i < ConfigUnit->RootPortCount; i++)
+            {
+                AcpiOsPrintf ("\n");
+                Status = AcpiDmDumpTable (Length, RpOffset,
+                    ACPI_ADD_PTR (ACPI_KEYP_RP_INFO, Table, RpOffset),
+                    sizeof (ACPI_KEYP_RP_INFO), AcpiDmTableInfoKeyp0a);
+                if (ACPI_FAILURE (Status))
+                {
+                    return;
+                }
+
+                RpOffset += sizeof (ACPI_KEYP_RP_INFO);
+            }
+            break;
+
+        default:
+
+            AcpiOsPrintf ("\n*** Unknown KEYP subtable type 0x%X\n",
+                Subtable->Type);
+            break;
+        }
+
+        /* Point to next subtable */
+
+        Offset += Subtable->Length;
+    }
+}
+
+
+/*******************************************************************************
+ *
  * FUNCTION:    AcpiDmDumpLpit
  *
  * PARAMETERS:  Table               - A LPIT table
@@ -1210,6 +1368,85 @@ AcpiDmDumpMcfg (
         Offset += sizeof (ACPI_MCFG_ALLOCATION);
         Subtable = ACPI_ADD_PTR (ACPI_MCFG_ALLOCATION, Subtable,
             sizeof (ACPI_MCFG_ALLOCATION));
+    }
+}
+
+/*******************************************************************************
+ *
+ * FUNCTION:    AcpiDmDumpMisc
+ *
+ * PARAMETERS:  Table               - A MISC table
+ *
+ * RETURN:      None
+ *
+ * DESCRIPTION: Format the contents of a MISC.
+ *
+ ******************************************************************************/
+
+void
+AcpiDmDumpMisc (
+    ACPI_TABLE_HEADER       *Table)
+{
+    ACPI_STATUS             Status;
+    UINT32                  Length = Table->Length;
+    UINT32                  Offset = sizeof (ACPI_TABLE_HEADER);
+    ACPI_MISC_GUID_ENTRY    *Subtable;
+    UINT32                  SubtableLength;
+
+    Status = AcpiDmDumpTable (Length, 0, Table, 0, AcpiDmTableInfoMisc);
+    if (ACPI_FAILURE (Status))
+    {
+        return;
+    }
+
+    Subtable = ACPI_ADD_PTR (ACPI_MISC_GUID_ENTRY, Table, Offset);
+    while (Offset < Length)
+    {
+        /* Ensure that the entry fields are within the table */
+
+        if ((Length - Offset) < ACPI_MISC_MIN_ENTRY_LENGTH)
+        {
+            AcpiOsPrintf ("Invalid subtable length\n");
+            return;
+        }
+
+        /*
+         * The entry length must cover at least the fixed portion of the
+         * entry and must not extend beyond the end of the table. This must
+         * be validated before the length is used below.
+         */
+        SubtableLength = Subtable->EntryLength;
+        if ((SubtableLength < ACPI_MISC_MIN_ENTRY_LENGTH) ||
+            (SubtableLength > (Length - Offset)))
+        {
+            AcpiOsPrintf ("Invalid EntryLength: 0x%X\n", SubtableLength);
+            return;
+        }
+
+        AcpiOsPrintf ("\n");
+        Status = AcpiDmDumpTable (Length, Offset, Subtable,
+            SubtableLength, AcpiDmTableInfoMisc0);
+        if (ACPI_FAILURE (Status))
+        {
+            return;
+        }
+
+        /* Dump the vendor data (optional) */
+
+        if (SubtableLength > ACPI_MISC_MIN_ENTRY_LENGTH)
+        {
+            Status = AcpiDmDumpTable (Length,
+                Offset + ACPI_MISC_MIN_ENTRY_LENGTH, Subtable->Data,
+                SubtableLength - ACPI_MISC_MIN_ENTRY_LENGTH,
+                AcpiDmTableInfoMisc0Data);
+            if (ACPI_FAILURE (Status))
+            {
+                return;
+            }
+        }
+
+        Offset += SubtableLength;
+        Subtable = ACPI_ADD_PTR (ACPI_MISC_GUID_ENTRY, Subtable, SubtableLength);
     }
 }
 
