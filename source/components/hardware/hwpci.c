@@ -22,7 +22,6 @@
 /* PCI configuration space values */
 
 #define PCI_CFG_HEADER_TYPE_REG             0x0E
-#define PCI_CFG_PRIMARY_BUS_NUMBER_REG      0x18
 #define PCI_CFG_SECONDARY_BUS_NUMBER_REG    0x19
 
 /* PCI header values */
@@ -407,17 +406,18 @@ AcpiHwGetPciDeviceInfo (
         return (AE_OK);
     }
 
-    /* Bridge: Get the Primary BusNumber */
-
-    Status = AcpiOsReadPciConfiguration (PciId,
-        PCI_CFG_PRIMARY_BUS_NUMBER_REG, &PciValue, 8);
-    if (ACPI_FAILURE (Status))
-    {
-        return (Status);
-    }
-
+    /*
+     * Bridge: The bus number of the bridge itself is already known, either
+     * from the secondary bus number of the parent bridge or from the _BBN
+     * of the root bridge. Do not replace it with the primary bus number
+     * register of the bridge: that register reads as zero after the bridge
+     * has been powered up (e.g. from D3cold, while its _PS0 is executing)
+     * and before the OS has restored its configuration space. The derived
+     * PCI ID would then refer to bus 0, and since it is cached for the
+     * lifetime of the operation region, all later accesses would go to
+     * the wrong device.
+     */
     *IsBridge = TRUE;
-    PciId->Bus = (UINT16) PciValue;
 
     /* Bridge: Get the Secondary BusNumber */
 
