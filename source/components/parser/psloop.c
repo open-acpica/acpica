@@ -452,7 +452,8 @@ AcpiPsParseLoop (
                         }
                         WalkState->Aml = ParserState->Aml;
                     }
-                    ACPI_FREE(AcpiUtPopGenericState (&WalkState->ControlState));
+                    AcpiUtDeleteGenericState (
+                        AcpiUtPopGenericState (&WalkState->ControlState));
                 }
                 Op = NULL;
                 continue;

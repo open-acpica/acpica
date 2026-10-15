@@ -594,7 +594,6 @@ AcpiPsCompleteOp (
                     AcpiNsDeleteChildren ((*Op)->Common.Node);
                     AcpiNsRemoveNode ((*Op)->Common.Node);
                     (*Op)->Common.Node = NULL;
-                    AcpiPsDeleteParseTree (*Op);
                 }
 
                 Status2 = AcpiPsCompleteThisOp (WalkState, *Op);
