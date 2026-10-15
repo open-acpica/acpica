@@ -125,6 +125,7 @@ AcpiPsCompleteThisOp (
 {
     ACPI_PARSE_OBJECT       *Prev;
     ACPI_PARSE_OBJECT       *Next;
+    const ACPI_OPCODE_INFO  *OpInfo;
     const ACPI_OPCODE_INFO  *ParentInfo;
     ACPI_PARSE_OBJECT       *ReplacementOp = NULL;
     ACPI_STATUS             Status = AE_OK;
@@ -144,8 +145,9 @@ AcpiPsCompleteThisOp (
 
     /* Delete this op and the subtree below it if asked to */
 
+    OpInfo = AcpiPsGetOpcodeInfo (Op->Common.AmlOpcode);
     if (((WalkState->ParseFlags & ACPI_PARSE_TREE_MASK) != ACPI_PARSE_DELETE_TREE) ||
-         (WalkState->OpInfo->Class == AML_CLASS_ARGUMENT))
+        ((OpInfo->Class == AML_CLASS_ARGUMENT) && Op->Common.Parent))
     {
         return_ACPI_STATUS (AE_OK);
     }
