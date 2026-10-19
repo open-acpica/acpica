@@ -1,0 +1,42 @@
+name: Test build
+
+on:
+  push:
+    branches: [pending]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build tools
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends bison flex m4
+          gcc --version | head -n1
+          bison --version | head -n1
+          flex --version
+
+      - name: make
+        run: |
+          set -o pipefail
+          make 2>&1 | tee "$RUNNER_TEMP/build.log"
+
+      - name: Upload build log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log-${{ github.sha }}
+          path: ${{ runner.temp }}/build.log
+          retention-days: 30
