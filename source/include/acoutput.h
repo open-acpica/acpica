@@ -273,6 +273,11 @@
 #define ACPI_IS_DEBUG_ENABLED(Level, Component) \
     ((Level & AcpiDbgLevel) && (Component & AcpiDbgLayer))
 
+/* Check if function entry/exit tracing is currently dynamically enabled */
+
+#define ACPI_IS_FUNCTION_TRACE_ENABLED \
+    ACPI_IS_DEBUG_ENABLED (ACPI_LV_FUNCTIONS, _COMPONENT)
+
 /*
  * Master debug print macros
  * Print message if and only if:
@@ -334,17 +339,41 @@
  * intended to be used by both the entry trace and the exit trace.
  */
 
+/*
+ * The trace helpers below test the debug level themselves, but they are
+ * out-of-line calls made on every entry to and exit from every ACPICA
+ * function. Test the level at the call site first, so that a build with
+ * ACPI_DEBUG_OUTPUT enabled but function tracing turned off (the usual
+ * configuration of a distribution kernel) pays only a load and a branch.
+ *
+ * Note: the nesting level and the stack-usage statistics maintained by the
+ * trace helpers are therefore updated only while function tracing is enabled.
+ * They are used for the indentation of AcpiExec debug output and by the
+ * debugger's "stats stack" command, both of which are function-trace
+ * facilities themselves.
+ */
+
 /* Helper macro */
 
 #define ACPI_TRACE_ENTRY(Name, Function, Type, Param) \
     ACPI_FUNCTION_NAME (Name) \
-    Function (ACPI_DEBUG_PARAMETERS, (Type) (Param))
+    ACPI_DO_WHILE0 ({ \
+        if (ACPI_IS_FUNCTION_TRACE_ENABLED) \
+        { \
+            Function (ACPI_DEBUG_PARAMETERS, (Type) (Param)); \
+        } \
+    })
 
 /* The actual entry trace macros */
 
 #define ACPI_FUNCTION_TRACE(Name) \
     ACPI_FUNCTION_NAME(Name) \
-    AcpiUtTrace (ACPI_DEBUG_PARAMETERS)
+    ACPI_DO_WHILE0 ({ \
+        if (ACPI_IS_FUNCTION_TRACE_ENABLED) \
+        { \
+            AcpiUtTrace (ACPI_DEBUG_PARAMETERS); \
+        } \
+    })
 
 #define ACPI_FUNCTION_TRACE_PTR(Name, Pointer) \
     ACPI_TRACE_ENTRY (Name, AcpiUtTracePtr, void *, Pointer)
@@ -385,7 +414,10 @@
 #define ACPI_TRACE_EXIT(Function, Type, Param) \
     ACPI_DO_WHILE0 ({ \
         register Type _Param = (Type) (Param); \
-        Function (ACPI_DEBUG_PARAMETERS, _Param); \
+        if (ACPI_IS_FUNCTION_TRACE_ENABLED) \
+        { \
+            Function (ACPI_DEBUG_PARAMETERS, _Param); \
+        } \
         return (_Param); \
     })
 
@@ -393,7 +425,10 @@
 
 #define ACPI_TRACE_EXIT(Function, Type, Param) \
     ACPI_DO_WHILE0 ({ \
-        Function (ACPI_DEBUG_PARAMETERS, (Type) (Param)); \
+        if (ACPI_IS_FUNCTION_TRACE_ENABLED) \
+        { \
+            Function (ACPI_DEBUG_PARAMETERS, (Type) (Param)); \
+        } \
         return (Param); \
     })
 
@@ -403,7 +438,10 @@
 
 #define return_VOID \
     ACPI_DO_WHILE0 ({ \
-        AcpiUtExit (ACPI_DEBUG_PARAMETERS); \
+        if (ACPI_IS_FUNCTION_TRACE_ENABLED) \
+        { \
+            AcpiUtExit (ACPI_DEBUG_PARAMETERS); \
+        } \
         return; \
     })
 
@@ -463,6 +501,7 @@
 #define ACPI_DUMP_PATHNAME(a, b, c, d)
 #define ACPI_DUMP_BUFFER(a, b)
 #define ACPI_IS_DEBUG_ENABLED(Level, Component) 0
+#define ACPI_IS_FUNCTION_TRACE_ENABLED  0
 #define ACPI_TRACE_POINT(a, b, c, d)
 
 /* Return macros must have a return statement at the minimum */
