@@ -394,7 +394,7 @@ AcpiExStartTraceOpcode (
         (AcpiGbl_TraceFlags & ACPI_TRACE_OPCODE))
     {
         ACPI_TRACE_POINT (ACPI_TRACE_AML_OPCODE, TRUE,
-            Op->Common.Aml, Op->Common.AmlOpName);
+            Op->Common.Aml, ACPI_CAST_PTR (char, Op->Common.AmlOpName));
     }
 }
 
@@ -426,6 +426,6 @@ AcpiExStopTraceOpcode (
         (AcpiGbl_TraceFlags & ACPI_TRACE_OPCODE))
     {
         ACPI_TRACE_POINT (ACPI_TRACE_AML_OPCODE, FALSE,
-            Op->Common.Aml, Op->Common.AmlOpName);
+            Op->Common.Aml, ACPI_CAST_PTR (char, Op->Common.AmlOpName));
     }
 }

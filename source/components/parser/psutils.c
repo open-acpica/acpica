@@ -75,9 +75,13 @@ AcpiPsInitOp (
     Op->Common.DescriptorType = ACPI_DESC_TYPE_PARSER;
     Op->Common.AmlOpcode = Opcode;
 
-    ACPI_DISASM_ONLY_MEMBERS (AcpiUtSafeStrncpy (Op->Common.AmlOpName,
-        (AcpiPsGetOpcodeInfo (Opcode))->Name,
-        sizeof (Op->Common.AmlOpName)));
+    /*
+     * The opcode name is a pointer into the static AcpiGbl_AmlOpInfo table and
+     * lives for the life of the program, so the Op only has to remember where
+     * it is. Copying it cost a 16-byte strncpy on every parse op.
+     */
+    ACPI_DISASM_ONLY_MEMBERS (Op->Common.AmlOpName =
+        (AcpiPsGetOpcodeInfo (Opcode))->Name);
 }
 
 
