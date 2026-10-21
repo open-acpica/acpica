@@ -645,12 +645,8 @@ AcpiExLoadOp (
     AcpiExEnterInterpreter ();
     if (ACPI_FAILURE (Status))
     {
-        /*
-         * Table buffer is already freed by AcpiTbUninstallTable
-         * in AcpiTbInstallAndLoadTable if installation succeeded,
-         * or by AcpiTbUninstallTable in AcpiTbInstallStandardTable
-         * if verification failed after partial setup.
-         */
+        /* Table buffer is already freed by AcpiTbInstallAndLoadTable */
+
         return_ACPI_STATUS (Status);
     }
 
