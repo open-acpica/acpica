@@ -1124,7 +1124,9 @@ AcpiTbLoadTable (
  *
  * RETURN:      Status
  *
- * DESCRIPTION: Install and load an ACPI table
+ * DESCRIPTION: Install and load an ACPI table. An internally allocated
+ *              table (ACPI_TABLE_ORIGIN_INTERNAL_VIRTUAL) is always consumed,
+ *              on failure it is freed here.
  *
  ******************************************************************************/
 
@@ -1149,6 +1151,15 @@ AcpiTbInstallAndLoadTable (
         Override, &i);
     if (ACPI_FAILURE (Status))
     {
+        /*
+         * Table was not installed (e.g. it is a duplicate or failed
+         * verification), so nobody else will free an internal buffer
+         */
+        if ((Flags & ACPI_TABLE_ORIGIN_MASK) ==
+            ACPI_TABLE_ORIGIN_INTERNAL_VIRTUAL)
+        {
+            ACPI_FREE (Table);
+        }
         goto Exit;
     }
 
