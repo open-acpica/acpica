@@ -196,6 +196,7 @@ AcpiExResolveObjectToValue (
                      * Delete the ref object, increment the returned object
                      */
                     AcpiUtAddReference (ObjDesc);
+                    AcpiUtRemoveReference (StackDesc);
                     *StackPtr = ObjDesc;
                 }
                 else
