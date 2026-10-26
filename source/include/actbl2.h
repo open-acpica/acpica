@@ -2254,7 +2254,7 @@ typedef struct acpi_mpam_msc_node
 {
     UINT16                     Length;
     UINT8                      InterfaceType;
-    UINT8                      Reserved;
+    UINT8                      Type;
     UINT32                     Identifier;
     UINT64                     BaseAddress;
     UINT32                     MMIOSize;
@@ -2264,7 +2264,7 @@ typedef struct acpi_mpam_msc_node
     UINT32                     OverflowInterruptAffinity;
     UINT32                     ErrorInterrupt;
     UINT32                     ErrorInterruptFlags;
-    UINT32                     Reserved2;
+    UINT32                     MpamFbOffset;
     UINT32                     ErrorInterruptAffinity;
     UINT32                     MaxNrdyUsec;
     UINT64                     HardwareIdLinkedDevice;

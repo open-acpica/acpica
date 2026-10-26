@@ -1245,19 +1245,19 @@ ACPI_DMTABLE_INFO           AcpiDmTableInfoMisc0Data[] =
 /*******************************************************************************
  *
  * MPAM - Memory System Resource Partitioning and Monitoring Tables
- * Arm's DEN0065 MPAM ACPI 2.0. December 2022.
+ * Arm's DEN0065C MPAM ACPI 3.1. October 2026.
  ******************************************************************************/
 
 /* MPAM subtables */
 
 /* 0: MPAM Resource Node Structure - A root MSC table.
- * Arm's DEN0065 MPAM ACPI 2.0. Table 4: MPAM MSC node body.
+ * Arm's DEN0065 MPAM ACPI 3.1. Table 6: MPAM MSC node body.
  */
 ACPI_DMTABLE_INFO           AcpiDmTableInfoMpam0[] =
 {
     {ACPI_DMT_UINT16,   ACPI_MPAM0_OFFSET (Length),                      "Length", 0},
     {ACPI_DMT_UINT8,    ACPI_MPAM0_OFFSET (InterfaceType),               "Interface type", 0},
-    {ACPI_DMT_UINT8,    ACPI_MPAM0_OFFSET (Reserved),                    "Reserved", 0},
+    {ACPI_DMT_UINT8,    ACPI_MPAM0_OFFSET (Type),                        "MPAM node type", 0},
     {ACPI_DMT_UINT32,   ACPI_MPAM0_OFFSET (Identifier),                  "Identifier", 0},
     {ACPI_DMT_UINT64,   ACPI_MPAM0_OFFSET (BaseAddress),                 "Base address", 0},
     {ACPI_DMT_UINT32,   ACPI_MPAM0_OFFSET (MMIOSize),                    "MMIO size", 0},
@@ -1267,7 +1267,7 @@ ACPI_DMTABLE_INFO           AcpiDmTableInfoMpam0[] =
     {ACPI_DMT_UINT32,   ACPI_MPAM0_OFFSET (OverflowInterruptAffinity),   "Overflow interrupt affinity", 0},
     {ACPI_DMT_UINT32,   ACPI_MPAM0_OFFSET (ErrorInterrupt),              "Error interrupt", 0},
     {ACPI_DMT_UINT32,   ACPI_MPAM0_OFFSET (ErrorInterruptFlags),         "Error interrupt flags", 0},
-    {ACPI_DMT_UINT32,   ACPI_MPAM0_OFFSET (Reserved2),                   "Reserved2", 0},
+    {ACPI_DMT_UINT32,   ACPI_MPAM0_OFFSET (MpamFbOffset),                "MPAM-Fb identifier offset", 0},
     {ACPI_DMT_UINT32,   ACPI_MPAM0_OFFSET (ErrorInterruptAffinity),      "Error interrupt affinity", 0},
     {ACPI_DMT_UINT32,   ACPI_MPAM0_OFFSET (MaxNrdyUsec),                 "MAX_NRDY_USEC", 0},
     {ACPI_DMT_NAME8,    ACPI_MPAM0_OFFSET (HardwareIdLinkedDevice),      "Hardware ID of linked device", 0},
@@ -1278,7 +1278,7 @@ ACPI_DMTABLE_INFO           AcpiDmTableInfoMpam0[] =
 };
 
 /* 1: MPAM Resource (RIS) Node Structure - A subtable of MSC Nodes.
- * Arm's DEN0065 MPAM ACPI 2.0. Table 9: Resource node.
+ * Arm's DEN0065 MPAM ACPI 3.1. Table 9: Resource node.
  */
 ACPI_DMTABLE_INFO           AcpiDmTableInfoMpam1[] =
 {
@@ -1297,7 +1297,7 @@ ACPI_DMTABLE_INFO           AcpiDmTableInfoMpam1Deps[] =
 };
 
 /* 1A: MPAM Processor cache locator descriptor. A subtable of RIS.
- * Arm's DEN0065 MPAM ACPI 2.0. Table 13.
+ * Arm's DEN0065 MPAM ACPI 3.1. Table 13.
  */
 ACPI_DMTABLE_INFO           AcpiDmTableInfoMpam1A[] =
 {
@@ -1307,7 +1307,7 @@ ACPI_DMTABLE_INFO           AcpiDmTableInfoMpam1A[] =
 };
 
 /* 1B: MPAM Memory locator descriptor. A subtable of RIS.
- * Arm's DEN0065 MPAM ACPI 2.0. Table 14.
+ * Arm's DEN0065 MPAM ACPI 3.1. Table 14.
  */
 ACPI_DMTABLE_INFO           AcpiDmTableInfoMpam1B[] =
 {
@@ -1317,7 +1317,7 @@ ACPI_DMTABLE_INFO           AcpiDmTableInfoMpam1B[] =
 };
 
 /* 1C: MPAM SMMU locator descriptor. A subtable of RIS.
- * Arm's DEN0065 MPAM ACPI 2.0. Table 15.
+ * Arm's DEN0065 MPAM ACPI 3.1. Table 15.
  */
 ACPI_DMTABLE_INFO           AcpiDmTableInfoMpam1C[] =
 {
@@ -1327,7 +1327,7 @@ ACPI_DMTABLE_INFO           AcpiDmTableInfoMpam1C[] =
 };
 
 /* 1D: MPAM Memory-side cache locator descriptor. A subtable of RIS.
- * Arm's DEN0065 MPAM ACPI 2.0. Table 16.
+ * Arm's DEN0065 MPAM ACPI 3.1. Table 16.
  */
 ACPI_DMTABLE_INFO           AcpiDmTableInfoMpam1D[] =
 {
@@ -1338,7 +1338,7 @@ ACPI_DMTABLE_INFO           AcpiDmTableInfoMpam1D[] =
 };
 
 /* 1E: MPAM ACPI device locator descriptor. A subtable of RIS.
- * Arm's DEN0065 MPAM ACPI 2.0. Table 17.
+ * Arm's DEN0065 MPAM ACPI 3.1. Table 17.
  */
 ACPI_DMTABLE_INFO           AcpiDmTableInfoMpam1E[] =
 {
@@ -1348,7 +1348,7 @@ ACPI_DMTABLE_INFO           AcpiDmTableInfoMpam1E[] =
 };
 
 /* 1F: MPAM Interconnect locator descriptor. A subtable of RIS.
- * Arm's DEN0065 MPAM ACPI 2.0. Table 18.
+ * Arm's DEN0065 MPAM ACPI 3.1. Table 18.
  */
 ACPI_DMTABLE_INFO           AcpiDmTableInfoMpam1F[] =
 {
@@ -1358,7 +1358,7 @@ ACPI_DMTABLE_INFO           AcpiDmTableInfoMpam1F[] =
 };
 
 /* 1G: MPAM Locator structure.
- * Arm's DEN0065 MPAM ACPI 2.0. Table 12.
+ * Arm's DEN0065 MPAM ACPI 3.1. Table 12.
  */
 ACPI_DMTABLE_INFO           AcpiDmTableInfoMpam1G[] =
 {
@@ -1368,7 +1368,7 @@ ACPI_DMTABLE_INFO           AcpiDmTableInfoMpam1G[] =
 };
 
 /* 2: MPAM Functional dependency descriptor.
- * Arm's DEN0065 MPAM ACPI 2.0. Table 10.
+ * Arm's DEN0065 MPAM ACPI 3.1. Table 10.
  */
 ACPI_DMTABLE_INFO           AcpiDmTableInfoMpam2[] =
 {
