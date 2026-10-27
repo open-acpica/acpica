@@ -605,12 +605,17 @@ AcpiUtUpdateObjectReference (
                     /*
                      * For complex sub-objects, push them onto the stack
                      * for later processing (this eliminates recursion.)
+                     * If no state can be allocated, update the sub-object
+                     * right away. Abandoning the walk here would leave
+                     * this object and the remaining sub-objects with
+                     * unbalanced reference counts.
                      */
                     Status = AcpiUtCreateUpdateStateAndPush (
                         NextObject, Action, &StateList);
                     if (ACPI_FAILURE (Status))
                     {
-                        goto ErrorExit;
+                        (void) AcpiUtUpdateObjectReference (
+                            NextObject, Action);
                     }
                     break;
                 }
@@ -631,7 +636,8 @@ AcpiUtUpdateObjectReference (
                 Object->BankField.RegionObj, Action, &StateList);
             if (ACPI_FAILURE (Status))
             {
-                goto ErrorExit;
+                (void) AcpiUtUpdateObjectReference (
+                    Object->BankField.RegionObj, Action);
             }
             break;
 
@@ -642,7 +648,8 @@ AcpiUtUpdateObjectReference (
                 Object->IndexField.DataObj, Action, &StateList);
             if (ACPI_FAILURE (Status))
             {
-                goto ErrorExit;
+                (void) AcpiUtUpdateObjectReference (
+                    Object->IndexField.DataObj, Action);
             }
             break;
 
@@ -690,22 +697,6 @@ AcpiUtUpdateObjectReference (
     }
 
     return (AE_OK);
-
-
-ErrorExit:
-
-    ACPI_EXCEPTION ((AE_INFO, Status,
-        "Could not update object reference count"));
-
-    /* Free any stacked Update State objects */
-
-    while (StateList)
-    {
-        State = AcpiUtPopGenericState (&StateList);
-        AcpiUtDeleteGenericState (State);
-    }
-
-    return (Status);
 }
 
 
