@@ -2830,6 +2830,24 @@ DtCompileIort (
 
             DtInsertSubtable (ParentTable, Subtable);
             NodeLength += Subtable->Length;
+
+            /* Flags (optional, Root Complex node revision 4+) */
+
+            if (*PFieldList)
+            {
+                Status = DtCompileTable (PFieldList, AcpiDmTableInfoIort2a,
+                    &Subtable);
+                if (ACPI_FAILURE (Status))
+                {
+                    return (Status);
+                }
+
+                if (Subtable)
+                {
+                    DtInsertSubtable (ParentTable, Subtable);
+                    NodeLength += Subtable->Length;
+                }
+            }
             break;
 
         case ACPI_IORT_NODE_SMMU:

@@ -245,6 +245,36 @@ AcpiDmDumpIort (
             }
             break;
 
+        case ACPI_IORT_NODE_PCI_ROOT_COMPLEX:
+
+            /*
+             * Dump the Flags (optional). Older Root Complex nodes end at
+             * the Reserved field, so only dump the Flags if the node specific
+             * data (up to the ID mappings, or to the node end if there are
+             * none) covers all of ACPI_IORT_ROOT_COMPLEX.
+             */
+            NodeOffset = ACPI_OFFSET (ACPI_IORT_NODE, NodeData);
+            if (IortNode->MappingCount)
+            {
+                Length = IortNode->MappingOffset;
+            }
+            else
+            {
+                Length = IortNode->Length;
+            }
+
+            if (Length >= NodeOffset + sizeof (ACPI_IORT_ROOT_COMPLEX))
+            {
+                Status = AcpiDmDumpTable (Table->Length, Offset + NodeOffset,
+                    ACPI_ADD_PTR (ACPI_IORT_NODE, IortNode, NodeOffset),
+                    sizeof (ACPI_IORT_ROOT_COMPLEX), AcpiDmTableInfoIort2a);
+                if (ACPI_FAILURE (Status))
+                {
+                    return;
+                }
+            }
+            break;
+
         case ACPI_IORT_NODE_SMMU:
 
             AcpiOsPrintf ("\n");
