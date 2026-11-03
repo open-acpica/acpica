@@ -1745,7 +1745,7 @@ AcpiDmDumpMrrm (
 {
     ACPI_STATUS                      Status;
     ACPI_MRRM_MEM_RANGE_ENTRY        *Subtable;
-    UINT16                           Offset = sizeof (ACPI_TABLE_MRRM);
+    UINT32                           Offset = sizeof (ACPI_TABLE_MRRM);
 
     /* Main table */
 
