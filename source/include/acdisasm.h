@@ -409,6 +409,7 @@ extern ACPI_DMTABLE_INFO        AcpiDmTableInfoIort0a[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoIort1[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoIort1a[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoIort2[];
+extern ACPI_DMTABLE_INFO        AcpiDmTableInfoIort2a[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoIort3[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoIort3a[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoIort3b[];
