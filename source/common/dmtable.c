@@ -1385,12 +1385,12 @@ AcpiDmDumpTable (
              * Each hex byte is separated with a space.
              * Multiple lines are separated by line continuation char.
              */
-            for (Temp16 = 0; Temp16 < ByteLength; Temp16++)
+            for (Temp32 = 0; Temp32 < ByteLength; Temp32++)
             {
-                AcpiOsPrintf ("%2.2X", Target[Temp16]);
-                if ((UINT32) (Temp16 + 1) < ByteLength)
+                AcpiOsPrintf ("%2.2X", Target[Temp32]);
+                if ((Temp32 + 1) < ByteLength)
                 {
-                    if ((Temp16 > 0) && (!((Temp16+1) % 16)))
+                    if ((Temp32 > 0) && (!((Temp32+1) % 16)))
                     {
                         AcpiOsPrintf (" \\\n"); /* Line continuation */
                         AcpiDmLineHeader (0, 0, NULL);

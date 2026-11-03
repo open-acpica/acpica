@@ -369,7 +369,8 @@ CgWriteAmlDefBlockComment(
 
     /* First, print the file name comment after changing .asl to .dsl */
 
-    NewFilename = UtLocalCacheCalloc (strlen (Op->Asl.Filename));
+    NewFilename = UtLocalCacheCalloc (strlen (Op->Asl.Filename) +
+        strlen (FILE_SUFFIX_DISASSEMBLY) + 2);
     strcpy (NewFilename, Op->Asl.Filename);
     DirectoryPosition = strrchr (NewFilename, '/');
     Position = strrchr (NewFilename, '.');
