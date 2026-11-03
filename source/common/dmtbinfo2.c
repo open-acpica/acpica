@@ -225,6 +225,15 @@ ACPI_DMTABLE_INFO           AcpiDmTableInfoIort2[] =
     ACPI_DMT_TERMINATOR
 };
 
+/* Flags (optional, Root Complex node revision 4+) */
+
+ACPI_DMTABLE_INFO           AcpiDmTableInfoIort2a[] =
+{
+    {ACPI_DMT_UINT32,   ACPI_IORT2_OFFSET (Flags),                  "Flags (decoded below)", DT_OPTIONAL},
+    {ACPI_DMT_FLAG0,    ACPI_IORT2_FLAG_OFFSET (Flags, 0),          "PASID Supported", 0},
+    ACPI_DMT_TERMINATOR
+};
+
 /* 0x03: SMMUv1/2 */
 
 ACPI_DMTABLE_INFO           AcpiDmTableInfoIort3[] =
