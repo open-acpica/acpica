@@ -710,6 +710,39 @@ AcpiEvClearGpeDispatchByOwner (
         GpeBlock = GpeXruptInfo->GpeBlockListHead;
         while (GpeBlock)
         {
+            /*
+             * Walk all GPEs in this block to make sure none are blocked from
+             * getting cleared with DisableForDispatch
+             */
+
+            for (GpeNumber = 0; GpeNumber < GpeBlock->GpeCount; GpeNumber++)
+            {
+                GpeEventInfo = &GpeBlock->EventInfo[GpeNumber];
+                GpeDispatchType = AcpiEvDispatchTypeHiddenHandler(GpeEventInfo, OwnerId);
+                if ((GpeDispatchType == ACPI_GPE_DISPATCH_METHOD ||
+                     GpeDispatchType == ACPI_GPE_DISPATCH_NOTIFY) &&
+                     GpeEventInfo->DisableForDispatch)
+                {
+                    /* At least one handler is polling or executing, cannot clear */
+                    Status = AE_ABORT_METHOD;
+                    AcpiOsReleaseLock (AcpiGbl_GpeLock, Flags);
+                    (void) AcpiUtReleaseMutex (ACPI_MTX_EVENTS);
+                    return_ACPI_STATUS (Status);
+                }
+            }
+
+            GpeBlock = GpeBlock->Next;
+        }
+
+        GpeXruptInfo = GpeXruptInfo->Next;
+    }
+
+    GpeXruptInfo = AcpiGbl_GpeXruptListHead;
+    while (GpeXruptInfo)
+    {
+        GpeBlock = GpeXruptInfo->GpeBlockListHead;
+        while (GpeBlock)
+        {
             /* Walk all GPEs in this block */
 
             for (GpeNumber = 0; GpeNumber < GpeBlock->GpeCount; GpeNumber++)
@@ -724,26 +757,16 @@ AcpiEvClearGpeDispatchByOwner (
                      * GPE method belongs to table being unloaded. Clear
                      * only the dispatch type, preserve other flags.
                      */
+                    GpeEventInfo->Flags &= ~ACPI_GPE_DISPATCH_MASK;
+                    GpeEventInfo->Dispatch.MethodNode = NULL;
 
-                    if (GpeEventInfo->DisableForDispatch)
-                    {
-                        /* Handler is executing, cannot clear */
-                        Status = AE_ABORT_METHOD;
-                    }
-                    else
-                    {
-                        /* Clear only the dispatch type, preserve other flags */
-                        GpeEventInfo->Flags &= ~ACPI_GPE_DISPATCH_MASK;
-                        GpeEventInfo->Dispatch.MethodNode = NULL;
-
-                        /*
-                         * Hardware-disable the GPE so a late interrupt
-                         * cannot fire and land in the "no handler" default
-                         * branch with DisableForDispatch stuck at TRUE.
-                         */
-                        (void) AcpiHwLowSetGpe (
-                            GpeEventInfo, ACPI_GPE_DISABLE);
-                    }
+                    /*
+                     * Hardware-disable the GPE so a late interrupt
+                     * cannot fire and land in the "no handler" default
+                     * branch with DisableForDispatch stuck at TRUE.
+                     */
+                    (void) AcpiHwLowSetGpe (
+                        GpeEventInfo, ACPI_GPE_DISABLE);
                     break;
 
                 case ACPI_GPE_DISPATCH_HANDLER:
