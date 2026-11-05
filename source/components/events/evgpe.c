@@ -545,18 +545,6 @@ AcpiEvAsynchExecuteGpeMethod (
 
     case ACPI_GPE_DISPATCH_METHOD:
 
-        /*
-         * Re-check dispatch type. The table may have been unloaded
-         * and its GPE dispatch cleared while we were waiting.
-         */
-        if (ACPI_GPE_DISPATCH_TYPE (GpeEventInfo->Flags) !=
-                ACPI_GPE_DISPATCH_METHOD)
-        {
-            ACPI_DEBUG_PRINT ((ACPI_DB_EVENTS,
-                "GPE method dispatch cleared during wait\n"));
-            goto ErrorExit;
-        }
-
         /* Allocate the evaluation information block */
 
         Info = ACPI_ALLOCATE_ZEROED (sizeof (ACPI_EVALUATE_INFO));
