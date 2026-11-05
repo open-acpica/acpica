@@ -639,6 +639,12 @@ AcpiEvClearGpeDispatchByOwner (
         return_ACPI_STATUS (AE_OK);
     }
 
+    Status = AcpiUtAcquireMutex (ACPI_MTX_EVENTS);
+    if (ACPI_FAILURE (Status))
+    {
+        return_ACPI_STATUS (Status);
+    }
+
     Flags = AcpiOsAcquireLock (AcpiGbl_GpeLock);
 
     /* Walk all GPE interrupt blocks */
@@ -691,6 +697,7 @@ AcpiEvClearGpeDispatchByOwner (
     }
 
     AcpiOsReleaseLock (AcpiGbl_GpeLock, Flags);
+    (void) AcpiUtReleaseMutex (ACPI_MTX_EVENTS);
     return_ACPI_STATUS (Status);
 }
 
