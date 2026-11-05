@@ -594,6 +594,105 @@ ErrorExit:
 
 /*******************************************************************************
  *
+ * FUNCTION:    AcpiEvNotifyListHasOwner
+ *
+ * PARAMETERS:  Notify          - List of notify dispatch events
+ *              OwnerId         - Table OwnerId being unloaded that should match
+ *                                one of the notify device nodes on the list
+ *
+ * RETURN:      Return TRUE if at least one of the device nodes matches the
+ *              passed OwnerId. Return FALSE if all notify list objects don't
+ *              match the passed OwnerId.
+ *
+ * DESCRIPTION: Check whether at least on object on the notify list matches its
+ *              OwnerId to the one passed as a function parameter. That means
+ *              that at least one device has ownership over an object on this
+ *              notify list.
+ *
+ ******************************************************************************/
+static BOOLEAN
+AcpiEvNotifyListHasOwner (
+    ACPI_GPE_NOTIFY_INFO    *Notify,
+    ACPI_OWNER_ID           OwnerId)
+{
+    while (Notify)
+    {
+        if (Notify->DeviceNode->OwnerId == OwnerId)
+        {
+            return (TRUE);
+        }
+        Notify = Notify->Next;
+    }
+    return (FALSE);
+}
+
+/*******************************************************************************
+ *
+ * FUNCTION:    AcpiEvUnlinkNotifyListDevId
+ *
+ * PARAMETERS:  OwnerId         - Table OwnerId being unloaded that should match
+ *                                the devices on the NotifyList.
+ *              NotifyList      - Address of the NotifyList from the GPE
+ *              ToFreeList      - Address of a ACPI_GPE_NOTIFY_INFO pointer that
+ *                                will later be used to free the device objects
+ *                                from the list that match the OwnerId
+ *
+ * RETURN:      Return TRUE if the original NotifyList was emptied after the
+ *              unlinking is done. Return FALSE otherwise.
+ *
+ * DESCRIPTION: Helper in processing the NotifyList during table unloading.
+ *              NotifyList can contain devices from other tables. Only devices
+ *              from the table currently getting unloaded should be cleared from
+ *              this list. This helper parses the list and moves nodes that
+ *              match the unloaded table's ID to a separate single linked list.
+ *              That list shall be later freed node by node. It shouldn't be
+ *              freed immediately as freeing/allocating should be avoided on
+ *              some system when the global spinlock is held.
+ *
+ ******************************************************************************/
+static BOOLEAN
+AcpiEvUnlinkNotifyListDevId (
+    ACPI_OWNER_ID           OwnerId,
+    ACPI_GPE_NOTIFY_INFO  **NotifyList,
+    ACPI_GPE_NOTIFY_INFO  **ToFreeList)
+{
+    /* Cursor pointer that will move through all NotifyList nodes addresses */
+    ACPI_GPE_NOTIFY_INFO  **NotifyPointer = NotifyList;
+    /* Currently looked at structure in the loop iteration */
+    ACPI_GPE_NOTIFY_INFO   *Node = *NotifyPointer;
+
+    /*
+     * Go through all Notify structures to find devices matching the OwnerId
+     * that is getting unloaded
+     */
+    while (Node)
+    {
+        if (Node->DeviceNode->OwnerId == OwnerId)
+        {
+            /* Modify original list by unlinking Node */
+            *NotifyPointer = Node->Next;
+            /* Link the unlinked node to the to-be-freed list */
+            Node->Next = *ToFreeList;
+            *ToFreeList = Node;
+        }
+        else
+        {
+            /* Move the cursor one node further */
+            NotifyPointer = &Node->Next;
+        }
+        /* Grab the next node or NULL if there is no more */
+        Node = *NotifyPointer;
+    }
+
+    /*
+     * If the original list was emptied return TRUE so that the caller knows to
+     * move the dispatch type from Notify to None
+     */
+    return (*NotifyList == NULL);
+}
+
+/*******************************************************************************
+ *
  * FUNCTION:    AcpiEvDispatchTypeHiddenHandler
  *
  * PARAMETERS:  GpeEventInfo    - Struct where GPE dispatch type is stored
@@ -618,12 +717,21 @@ AcpiEvDispatchTypeHiddenHandler(
 {
     UINT8 GpeDispatchType =  ACPI_GPE_DISPATCH_TYPE (GpeEventInfo->Flags);
     ACPI_GPE_HANDLER_INFO   *Handler;
+    ACPI_GPE_NOTIFY_INFO    *Notify;
 
     switch(GpeDispatchType)
     {
     case ACPI_GPE_DISPATCH_METHOD:
         if(!(GpeEventInfo->Dispatch.MethodNode) ||
             (GpeEventInfo->Dispatch.MethodNode->OwnerId != OwnerId))
+        {
+            return 0;
+        }
+        break;
+
+    case ACPI_GPE_DISPATCH_NOTIFY:
+        Notify = GpeEventInfo->Dispatch.NotifyList;
+        if (!AcpiEvNotifyListHasOwner(Notify, OwnerId))
         {
             return 0;
         }
@@ -642,6 +750,14 @@ AcpiEvDispatchTypeHiddenHandler(
         {
         case ACPI_GPE_DISPATCH_METHOD:
             if (Handler->MethodNode->OwnerId != OwnerId)
+            {
+                return 0;
+            }
+            break;
+        case ACPI_GPE_DISPATCH_NOTIFY:
+            if (!AcpiEvNotifyListHasOwner(
+                ACPI_CAST_PTR(ACPI_GPE_NOTIFY_INFO, Handler->MethodNode),
+                OwnerId))
             {
                 return 0;
             }
@@ -684,6 +800,8 @@ AcpiEvClearGpeDispatchByOwner (
     ACPI_STATUS             Status = AE_OK;
     UINT32                  GpeDispatchType;
     ACPI_GPE_HANDLER_INFO   *Handler;
+    ACPI_GPE_NOTIFY_INFO    *List;
+    ACPI_GPE_NOTIFY_INFO    *FreeList = NULL;
 
 
     ACPI_FUNCTION_TRACE_U32 (EvClearGpeDispatchByOwner, OwnerId);
@@ -769,6 +887,14 @@ AcpiEvClearGpeDispatchByOwner (
                         GpeEventInfo, ACPI_GPE_DISABLE);
                     break;
 
+                case ACPI_GPE_DISPATCH_NOTIFY:
+                    if (AcpiEvUnlinkNotifyListDevId(OwnerId, &GpeEventInfo->Dispatch.NotifyList, &FreeList))
+                    {
+                        GpeEventInfo->Flags &= ~ACPI_GPE_DISPATCH_MASK;
+                        (void) AcpiHwLowSetGpe (GpeEventInfo, ACPI_GPE_DISABLE);
+                    }
+                    break;
+
                 case ACPI_GPE_DISPATCH_HANDLER:
                 case ACPI_GPE_DISPATCH_RAW_HANDLER:
 
@@ -781,6 +907,16 @@ AcpiEvClearGpeDispatchByOwner (
                         Handler->MethodNode = NULL;
                         Handler->OriginalFlags &= ~ACPI_GPE_DISPATCH_MASK; /* -> NONE */
                         Handler->OriginallyEnabled = FALSE;
+                    }
+                    else if (GpeDispatchType == ACPI_GPE_DISPATCH_NOTIFY)
+                    {
+                        List = ACPI_CAST_PTR(ACPI_GPE_NOTIFY_INFO, Handler->MethodNode);
+                        if (AcpiEvUnlinkNotifyListDevId (OwnerId, &List, &FreeList))
+                        {
+                            Handler->OriginalFlags &= ~ACPI_GPE_DISPATCH_MASK;
+                            Handler->OriginallyEnabled = FALSE;
+                        }
+                        Handler->MethodNode = ACPI_CAST_PTR (ACPI_NAMESPACE_NODE, List);
                     }
                     break;
 
@@ -796,6 +932,15 @@ AcpiEvClearGpeDispatchByOwner (
     }
 
     AcpiOsReleaseLock (AcpiGbl_GpeLock, Flags);
+
+    /* Free the FreeList elements from the Notify path */
+    while (FreeList)
+    {
+        List = FreeList->Next;
+        ACPI_FREE (FreeList);
+        FreeList = List;
+    }
+
     (void) AcpiUtReleaseMutex (ACPI_MTX_EVENTS);
     return_ACPI_STATUS (Status);
 }
