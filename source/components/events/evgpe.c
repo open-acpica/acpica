@@ -592,6 +592,71 @@ ErrorExit:
     return_VOID;
 }
 
+/*******************************************************************************
+ *
+ * FUNCTION:    AcpiEvDispatchTypeHiddenHandler
+ *
+ * PARAMETERS:  GpeEventInfo    - Struct where GPE dispatch type is stored
+ *              OwnerId         - Table OwnerId being unloaded that should match
+ *                                the GpeEventInfo
+ *
+ * RETURN:      Return the dispatch type if it is either explicitly present or
+ *              hidden behind the handler saved MethodNode. The GPE has to also
+ *              match the table ID passed through OwnerId to this function.
+ *              Return 0 if the above criteria aren't matched.
+ *
+ * DESCRIPTION: Check whether a passed GPE event info is of either DISPATCH,
+ *              NOTIFY or HANDLER type. Then verify it belongs to the table
+ *              ID passed as an argument and that it has a Method Node. Helper
+ *              is used for example with cleaning up after table unloading.
+ *
+ ******************************************************************************/
+static UINT8
+AcpiEvDispatchTypeHiddenHandler(
+    ACPI_GPE_EVENT_INFO     *GpeEventInfo,
+    ACPI_OWNER_ID            OwnerId)
+{
+    UINT8 GpeDispatchType =  ACPI_GPE_DISPATCH_TYPE (GpeEventInfo->Flags);
+    ACPI_GPE_HANDLER_INFO   *Handler;
+
+    switch(GpeDispatchType)
+    {
+    case ACPI_GPE_DISPATCH_METHOD:
+        if(!(GpeEventInfo->Dispatch.MethodNode) ||
+            (GpeEventInfo->Dispatch.MethodNode->OwnerId != OwnerId))
+        {
+            return 0;
+        }
+        break;
+
+    /* Method or Notify can be saved if the handler is present */
+    case ACPI_GPE_DISPATCH_HANDLER:
+    case ACPI_GPE_DISPATCH_RAW_HANDLER:
+        Handler = GpeEventInfo->Dispatch.Handler;
+        if (!(Handler->MethodNode))
+        {
+            return 0;
+        }
+
+        switch (ACPI_GPE_DISPATCH_TYPE (Handler->OriginalFlags))
+        {
+        case ACPI_GPE_DISPATCH_METHOD:
+            if (Handler->MethodNode->OwnerId != OwnerId)
+            {
+                return 0;
+            }
+            break;
+        default:
+            return 0;
+        }
+
+        break;
+
+    default:
+        return 0;
+    }
+    return GpeDispatchType;
+}
 
 /*******************************************************************************
  *
@@ -617,6 +682,8 @@ AcpiEvClearGpeDispatchByOwner (
     UINT32                  GpeNumber;
     ACPI_CPU_FLAGS          Flags;
     ACPI_STATUS             Status = AE_OK;
+    UINT32                  GpeDispatchType;
+    ACPI_GPE_HANDLER_INFO   *Handler;
 
 
     ACPI_FUNCTION_TRACE_U32 (EvClearGpeDispatchByOwner, OwnerId);
@@ -649,12 +716,14 @@ AcpiEvClearGpeDispatchByOwner (
             {
                 GpeEventInfo = &GpeBlock->EventInfo[GpeNumber];
 
-                if ((ACPI_GPE_DISPATCH_TYPE (GpeEventInfo->Flags) ==
-                        ACPI_GPE_DISPATCH_METHOD) &&
-                    (GpeEventInfo->Dispatch.MethodNode) &&
-                    (GpeEventInfo->Dispatch.MethodNode->OwnerId == OwnerId))
+                GpeDispatchType = AcpiEvDispatchTypeHiddenHandler(GpeEventInfo, OwnerId);
+                switch(GpeDispatchType)
                 {
-                    /* GPE method belongs to table being unloaded */
+                case ACPI_GPE_DISPATCH_METHOD:
+                    /*
+                     * GPE method belongs to table being unloaded. Clear
+                     * only the dispatch type, preserve other flags.
+                     */
 
                     if (GpeEventInfo->DisableForDispatch)
                     {
@@ -675,6 +744,25 @@ AcpiEvClearGpeDispatchByOwner (
                         (void) AcpiHwLowSetGpe (
                             GpeEventInfo, ACPI_GPE_DISABLE);
                     }
+                    break;
+
+                case ACPI_GPE_DISPATCH_HANDLER:
+                case ACPI_GPE_DISPATCH_RAW_HANDLER:
+
+                    Handler = GpeEventInfo->Dispatch.Handler;
+                    GpeDispatchType = ACPI_GPE_DISPATCH_TYPE (Handler->OriginalFlags);
+
+                    /* Forget the hidden method so handler removal can't restore it */
+                    if (GpeDispatchType == ACPI_GPE_DISPATCH_METHOD)
+                    {
+                        Handler->MethodNode = NULL;
+                        Handler->OriginalFlags &= ~ACPI_GPE_DISPATCH_MASK; /* -> NONE */
+                        Handler->OriginallyEnabled = FALSE;
+                    }
+                    break;
+
+                default:
+                    break;
                 }
             }
 
