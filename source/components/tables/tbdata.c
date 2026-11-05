@@ -1194,8 +1194,9 @@ ACPI_STATUS
 AcpiTbUnloadTable (
     UINT32                  TableIndex)
 {
-    ACPI_STATUS             Status = AE_OK;
-    ACPI_TABLE_HEADER       *Table;
+    ACPI_STATUS                     Status = AE_OK;
+    ACPI_TABLE_HEADER               *Table;
+    ACPI_OWNER_ID ACPI_UNUSED_VAR   OwnerId;
 
 
     ACPI_FUNCTION_TRACE (TbUnloadTable);
@@ -1214,8 +1215,8 @@ AcpiTbUnloadTable (
      * If any matching GPE is currently dispatching, AE_ABORT_METHOD is
      * returned and the unload cannot proceed.
      */
-    Status = AcpiEvClearGpeDispatchByOwner (
-        AcpiGbl_RootTableList.Tables[TableIndex].OwnerId);
+    AcpiTbGetOwnerId (TableIndex, &OwnerId);
+    Status = AcpiEvClearGpeDispatchByOwner (OwnerId);
     if (ACPI_FAILURE (Status))
     {
         return_ACPI_STATUS (Status);
