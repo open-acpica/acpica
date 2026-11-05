@@ -1208,14 +1208,6 @@ AcpiTbUnloadTable (
         return_ACPI_STATUS (AE_NOT_EXIST);
     }
 
-    /* Invoke table handler */
-
-    Status = AcpiGetTableByIndex (TableIndex, &Table);
-    if (ACPI_SUCCESS (Status))
-    {
-        AcpiTbNotifyTable (ACPI_TABLE_EVENT_UNLOAD, Table);
-    }
-
 #if (!ACPI_REDUCED_HARDWARE)
     /*
      * Clear GPE dispatch for methods owned by the table being unloaded.
@@ -1229,6 +1221,14 @@ AcpiTbUnloadTable (
         return_ACPI_STATUS (Status);
     }
 #endif /* !ACPI_REDUCED_HARDWARE */
+
+    /* Invoke table handler */
+
+    Status = AcpiGetTableByIndex (TableIndex, &Table);
+    if (ACPI_SUCCESS (Status))
+    {
+        AcpiTbNotifyTable (ACPI_TABLE_EVENT_UNLOAD, Table);
+    }
 
     /* Delete the portion of the namespace owned by this table */
 
