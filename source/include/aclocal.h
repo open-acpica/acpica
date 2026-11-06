@@ -791,7 +791,6 @@ typedef struct acpi_notify_info
     ACPI_NAMESPACE_NODE             *Node;
     union acpi_operand_object       *HandlerListHead;
     ACPI_GLOBAL_NOTIFY_HANDLER      *Global;
-    ACPI_OWNER_ID                   OwnerId;
 
 } ACPI_NOTIFY_INFO;
 
