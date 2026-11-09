@@ -315,6 +315,7 @@ AcpiExWriteDataToField (
     ACPI_STATUS             Status;
     UINT32                  BufferLength;
     UINT32                  DataLength;
+    UINT32                  CopyLength;
     void                    *Buffer;
 
 
@@ -363,8 +364,35 @@ AcpiExWriteDataToField (
         Status = AcpiExWriteSerialBus (SourceDesc, ObjDesc, ResultDesc);
         return_ACPI_STATUS (Status);
     }
-    else if ((ObjDesc->Common.Type == ACPI_TYPE_LOCAL_REGION_FIELD) &&
-             (ObjDesc->Field.RegionObj->Region.SpaceId == ACPI_ADR_SPACE_PLATFORM_COMM))
+
+    /* Get a pointer to the data to be written */
+
+    switch (SourceDesc->Common.Type)
+    {
+    case ACPI_TYPE_INTEGER:
+
+        Buffer = &SourceDesc->Integer.Value;
+        BufferLength = sizeof (SourceDesc->Integer.Value);
+        break;
+
+    case ACPI_TYPE_BUFFER:
+
+        Buffer = SourceDesc->Buffer.Pointer;
+        BufferLength = SourceDesc->Buffer.Length;
+        break;
+
+    case ACPI_TYPE_STRING:
+
+        Buffer = SourceDesc->String.Pointer;
+        BufferLength = SourceDesc->String.Length;
+        break;
+
+    default:
+        return_ACPI_STATUS (AE_AML_OPERAND_TYPE);
+    }
+
+    if ((ObjDesc->Common.Type == ACPI_TYPE_LOCAL_REGION_FIELD) &&
+        (ObjDesc->Field.RegionObj->Region.SpaceId == ACPI_ADR_SPACE_PLATFORM_COMM))
     {
         /*
          * According to the spec a write to the COMD field will invoke the
@@ -394,9 +422,13 @@ AcpiExWriteDataToField (
             return_ACPI_STATUS (AE_AML_BUFFER_LIMIT);
         }
 
+        CopyLength = ACPI_MIN (DataLength, BufferLength);
+
+        memset (ObjDesc->Field.RegionObj->Field.InternalPccBuffer +
+            ObjDesc->Field.BaseByteOffset, 0, DataLength);
+
         memcpy (ObjDesc->Field.RegionObj->Field.InternalPccBuffer +
-            ObjDesc->Field.BaseByteOffset,
-            SourceDesc->Buffer.Pointer, DataLength);
+            ObjDesc->Field.BaseByteOffset, Buffer, CopyLength);
 
         if (MASTER_SUBSPACE_COMMAND (ObjDesc->Field.BaseByteOffset))
         {
@@ -411,33 +443,6 @@ AcpiExWriteDataToField (
             return_ACPI_STATUS (Status);
         }
         return (AE_OK);
-    }
-
-
-    /* Get a pointer to the data to be written */
-
-    switch (SourceDesc->Common.Type)
-    {
-    case ACPI_TYPE_INTEGER:
-
-        Buffer = &SourceDesc->Integer.Value;
-        BufferLength = sizeof (SourceDesc->Integer.Value);
-        break;
-
-    case ACPI_TYPE_BUFFER:
-
-        Buffer = SourceDesc->Buffer.Pointer;
-        BufferLength = SourceDesc->Buffer.Length;
-        break;
-
-    case ACPI_TYPE_STRING:
-
-        Buffer = SourceDesc->String.Pointer;
-        BufferLength = SourceDesc->String.Length;
-        break;
-
-    default:
-        return_ACPI_STATUS (AE_AML_OPERAND_TYPE);
     }
 
     ACPI_DEBUG_PRINT ((ACPI_DB_BFIELD,
