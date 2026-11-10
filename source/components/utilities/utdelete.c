@@ -562,6 +562,7 @@ AcpiUtUpdateObjectReference (
                 {
                     if (PrevObject->Common.Type != ACPI_TYPE_LOCAL_NOTIFY)
                     {
+                        NextObject = NULL;
                         break;
                     }
                     NextObject = PrevObject->Notify.Next[i];
