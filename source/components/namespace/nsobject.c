@@ -200,8 +200,11 @@ AcpiNsDetachObject (
 
     /* Alias nodes point directly to other namespace nodes; skip teardown */
     if ((Node->Type == ACPI_TYPE_LOCAL_ALIAS) ||
-        (Node->Type == ACPI_TYPE_LOCAL_METHOD_ALIAS) ||
-        (Node->Flags & ANOBJ_IS_ALIAS))
+        (Node->Type == ACPI_TYPE_LOCAL_METHOD_ALIAS)
+#if defined ACPI_ASL_COMPILER
+        || (Node->Flags & ANOBJ_IS_ALIAS)
+#endif
+       )
     {
         Node->Object = NULL;
         return_VOID;
