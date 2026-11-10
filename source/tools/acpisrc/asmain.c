@@ -444,7 +444,10 @@ main (
     {
         /* Process the directory tree */
 
-        AsProcessTree (ConversionTable, SourcePath, TargetPath);
+        if (AsProcessTree (ConversionTable, SourcePath, TargetPath))
+        {
+            return (-1);
+        }
     }
     else
     {
