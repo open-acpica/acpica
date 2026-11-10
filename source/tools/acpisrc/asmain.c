@@ -89,7 +89,7 @@ AsExaminePaths (
     Status = stat (Source, &Gbl_StatBuf);
     if (Status)
     {
-        printf ("Source path \"%s\" does not exist\n", Source);
+        fprintf (stderr, "Source path \"%s\" does not exist\n", Source);
         return (-1);
     }
 
@@ -348,7 +348,7 @@ main (
 
         default:
 
-            printf ("Unknown option: -v%s\n", AcpiGbl_Optarg);
+            fprintf (stderr, "Unknown option: -v%s\n", AcpiGbl_Optarg);
             return (-1);
         }
 
@@ -390,7 +390,7 @@ main (
     SourcePath = argv[AcpiGbl_Optind];
     if (!SourcePath)
     {
-        printf ("Missing source path\n");
+        fprintf (stderr, "Missing source path\n");
         AsDisplayUsage ();
         return (-1);
     }
@@ -479,7 +479,7 @@ main (
         }
         else
         {
-            printf ("Unknown file type - %s\n", SourcePath);
+            fprintf (stderr, "Unknown file type - %s\n", SourcePath);
         }
     }
 
