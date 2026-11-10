@@ -167,7 +167,8 @@ AsProcessTree (
         {
             if (errno != EEXIST)
             {
-                printf ("Could not create target directory\n");
+                printf ("Could not create target directory \"%s\": %s\n",
+                    TargetPath, strerror (errno));
                 return (-1);
             }
         }
@@ -759,7 +760,8 @@ AsGetFile (
     File = fopen (Filename, "rb");
     if (!File)
     {
-        printf ("Could not open file %s\n", Filename);
+        printf ("Could not open file \"%s\": %s\n",
+            Filename, strerror (errno));
         return (-1);
     }
 
@@ -867,8 +869,8 @@ AsPutFile (
     File = fopen (Pathname, "w+b");
     if (!File)
     {
-        perror ("Could not create destination file");
-        printf ("Could not create destination file \"%s\"\n", Pathname);
+        printf ("Could not create destination file \"%s\": %s\n",
+            Pathname, strerror (errno));
         return (-1);
     }
 
