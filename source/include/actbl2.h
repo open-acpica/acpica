@@ -1062,7 +1062,7 @@ typedef struct acpi_iovt_iommu
 
 #define ACPI_IOVT_IOMMU_PCI_DEVICE           (1<<0)
 #define ACPI_IOVT_IOMMU_PXM_VALID            (1<<1)
-#define ACPI_IOVT_IOMMU_MAGAGE_BY_SEGMENT    (1<<2)
+#define ACPI_IOVT_IOMMU_MANAGE_BY_SEGMENT    (1<<2)
 #define ACPI_IOVT_IOMMU_HW_CAP_SUPPORT       (1<<3)
 #define ACPI_IOVT_IOMMU_MSI_INT_BYPASS       (1<<4)
 
