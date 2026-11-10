@@ -53,7 +53,7 @@ make_acpisrc $SRCDIR $FORCE_ACPISRC > /dev/null
 echo "[linuxize.sh] Converting format (acpisrc)..."
 mkdir -p $LINUXDIR
 rm -f $LINUXFILE
-$ACPISRC -ldqy $ACPICAFILE $LINUXFILE > /dev/null
+$ACPISRC -ldqy $ACPICAFILE $LINUXFILE > /dev/null || exit 1
 
 # indent all .c and .h files
 echo "[linuxize.sh] Converting format (lindent)..."

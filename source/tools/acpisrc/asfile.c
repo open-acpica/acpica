@@ -15,7 +15,7 @@
 
 /* Local prototypes */
 
-void
+int
 AsDoWildcard (
     ACPI_CONVERSION_TABLE   *ConversionTable,
     char                    *SourcePath,
@@ -45,11 +45,14 @@ AsMaxInt (int a, int b)
  *
  * FUNCTION:    AsDoWildcard
  *
- * DESCRIPTION: Process files via wildcards
+ * DESCRIPTION: Process files via wildcards. All matching files are
+ *              processed, even if some of them fail.
+ *
+ * RETURN:      0 on success, -1 if any file or subdirectory failed
  *
  ******************************************************************************/
 
-void
+int
 AsDoWildcard (
     ACPI_CONVERSION_TABLE   *ConversionTable,
     char                    *SourcePath,
@@ -63,6 +66,7 @@ AsDoWildcard (
     char                    *SourceDirPath;
     char                    *TargetDirPath;
     char                    RequestedFileType;
+    int                     Status = 0;
 
 
     if (FileType == FILE_TYPE_DIRECTORY)
@@ -99,9 +103,24 @@ AsDoWildcard (
                 if (!AsCheckForDirectory (SourcePath, TargetPath, Filename,
                     &SourceDirPath, &TargetDirPath))
                 {
+                    /*
+                     * Lowercase only the new subdirectory name. The
+                     * caller supplied TargetPath must stay untouched,
+                     * as it may contain uppercase characters.
+                     */
+                    if (ConversionTable->Flags & FLG_LOWERCASE_DIRNAMES)
+                    {
+                        AcpiUtStrlwr (TargetDirPath + strlen (TargetPath) + 1);
+                    }
+
                     VERBOSE_PRINT (("Subdirectory: %s\n", Filename));
 
-                    AsProcessTree (ConversionTable, SourceDirPath, TargetDirPath);
+                    if (AsProcessTree (ConversionTable,
+                        SourceDirPath, TargetDirPath))
+                    {
+                        Status = -1;
+                    }
+
                     free (SourceDirPath);
                     free (TargetDirPath);
                 }
@@ -113,8 +132,11 @@ AsDoWildcard (
 
                 VERBOSE_PRINT (("File: %s\n", Filename));
 
-                AsProcessOneFile (ConversionTable, SourcePath, TargetPath,
-                    MaxPathLength, Filename, FileType);
+                if (AsProcessOneFile (ConversionTable, SourcePath, TargetPath,
+                    MaxPathLength, Filename, FileType))
+                {
+                    Status = -1;
+                }
                 break;
 
             default:
@@ -127,6 +149,8 @@ AsDoWildcard (
 
         AcpiOsCloseDirectory (DirInfo);
     }
+
+    return (Status);
 }
 
 
@@ -137,6 +161,9 @@ AsDoWildcard (
  * DESCRIPTION: Process the directory tree. Files with the extension ".C" and
  *              ".H" are processed as the tree is traversed.
  *
+ * RETURN:      0 on success, -1 if the target directory could not be
+ *              created or any file or subdirectory failed
+ *
  ******************************************************************************/
 
 ACPI_NATIVE_INT
@@ -146,23 +173,21 @@ AsProcessTree (
     char                    *TargetPath)
 {
     int                     MaxPathLength;
+    int                     Status = 0;
 
 
     MaxPathLength = AsMaxInt (strlen (SourcePath), strlen (TargetPath));
 
     if (!(ConversionTable->Flags & FLG_NO_FILE_OUTPUT))
     {
-        if (ConversionTable->Flags & FLG_LOWERCASE_DIRNAMES)
-        {
-            AcpiUtStrlwr (TargetPath);
-        }
-
         VERBOSE_PRINT (("Creating Directory \"%s\"\n", TargetPath));
         if (mkdir (TargetPath))
         {
             if (errno != EEXIST)
             {
-                printf ("Could not create target directory\n");
+                fprintf (stderr,
+                    "Could not create target directory \"%s\": %s\n",
+                    TargetPath, strerror (errno));
                 return (-1);
             }
         }
@@ -170,35 +195,53 @@ AsProcessTree (
 
     /* Do the C source files */
 
-    AsDoWildcard (ConversionTable, SourcePath, TargetPath, MaxPathLength,
-        FILE_TYPE_SOURCE, "*.c");
+    if (AsDoWildcard (ConversionTable, SourcePath, TargetPath, MaxPathLength,
+        FILE_TYPE_SOURCE, "*.c"))
+    {
+        Status = -1;
+    }
 
     /* Do the C header files */
 
-    AsDoWildcard (ConversionTable, SourcePath, TargetPath, MaxPathLength,
-        FILE_TYPE_HEADER, "*.h");
+    if (AsDoWildcard (ConversionTable, SourcePath, TargetPath, MaxPathLength,
+        FILE_TYPE_HEADER, "*.h"))
+    {
+        Status = -1;
+    }
 
     /* Do the Lex file(s) */
 
-    AsDoWildcard (ConversionTable, SourcePath, TargetPath, MaxPathLength,
-        FILE_TYPE_SOURCE, "*.l");
+    if (AsDoWildcard (ConversionTable, SourcePath, TargetPath, MaxPathLength,
+        FILE_TYPE_SOURCE, "*.l"))
+    {
+        Status = -1;
+    }
 
     /* Do the yacc file(s) */
 
-    AsDoWildcard (ConversionTable, SourcePath, TargetPath, MaxPathLength,
-        FILE_TYPE_SOURCE, "*.y");
+    if (AsDoWildcard (ConversionTable, SourcePath, TargetPath, MaxPathLength,
+        FILE_TYPE_SOURCE, "*.y"))
+    {
+        Status = -1;
+    }
 
     /* Do any ASL files */
 
-    AsDoWildcard (ConversionTable, SourcePath, TargetPath, MaxPathLength,
-        FILE_TYPE_HEADER, "*.asl");
+    if (AsDoWildcard (ConversionTable, SourcePath, TargetPath, MaxPathLength,
+        FILE_TYPE_HEADER, "*.asl"))
+    {
+        Status = -1;
+    }
 
     /* Do any subdirectories */
 
-    AsDoWildcard (ConversionTable, SourcePath, TargetPath, MaxPathLength,
-        FILE_TYPE_DIRECTORY, "*");
+    if (AsDoWildcard (ConversionTable, SourcePath, TargetPath, MaxPathLength,
+        FILE_TYPE_DIRECTORY, "*"))
+    {
+        Status = -1;
+    }
 
-    return (0);
+    return (Status);
 }
 
 
@@ -323,7 +366,7 @@ AsConvertFile (
 
     default:
 
-        printf ("Unknown file type, cannot process\n");
+        fprintf (stderr, "Unknown file type, cannot process\n");
         return;
     }
 
@@ -495,7 +538,7 @@ AsConvertFile (
 
         default:
 
-            printf ("Unknown conversion subfunction opcode\n");
+            fprintf (stderr, "Unknown conversion subfunction opcode\n");
             break;
         }
     }
@@ -578,7 +621,7 @@ AsProcessOneFile (
     Pathname = calloc (MaxPathLength + strlen (Filename) + 2, 1);
     if (!Pathname)
     {
-        printf ("Could not allocate buffer for file pathnames\n");
+        fprintf (stderr, "Could not allocate buffer for file pathnames\n");
         return (-1);
     }
 
@@ -646,7 +689,8 @@ AsProcessOneFile (
                 strlen (Filename) + 2 + strlen (TargetPath), 1);
             if (!OutPathname)
             {
-                printf ("Could not allocate buffer for file pathnames\n");
+                fprintf (stderr,
+                    "Could not allocate buffer for file pathnames\n");
                 Status = -1;
                 goto Exit2;
             }
@@ -658,7 +702,12 @@ AsProcessOneFile (
                 strcat (OutPathname, Filename);
             }
 
-            AsPutFile (OutPathname, Gbl_FileBuffer, ConversionTable->Flags);
+            if (AsPutFile (OutPathname, Gbl_FileBuffer,
+                ConversionTable->Flags))
+            {
+                Status = -1;
+            }
+
             free (OutPathname);
         }
     }
@@ -703,14 +752,16 @@ AsCheckForDirectory (
     SrcPath = calloc (strlen (SourceDirPath) + strlen (Filename) + 2, 1);
     if (!SrcPath)
     {
-        printf ("Could not allocate buffer for directory source pathname\n");
+        fprintf (stderr,
+            "Could not allocate buffer for directory source pathname\n");
         return (-1);
     }
 
     TgtPath = calloc (strlen (TargetDirPath) + strlen (Filename) + 2, 1);
     if (!TgtPath)
     {
-        printf ("Could not allocate buffer for directory target pathname\n");
+        fprintf (stderr,
+            "Could not allocate buffer for directory target pathname\n");
         free (SrcPath);
         return (-1);
     }
@@ -754,7 +805,8 @@ AsGetFile (
     File = fopen (Filename, "rb");
     if (!File)
     {
-        printf ("Could not open file %s\n", Filename);
+        fprintf (stderr, "Could not open file \"%s\": %s\n",
+            Filename, strerror (errno));
         return (-1);
     }
 
@@ -763,7 +815,7 @@ AsGetFile (
     Size = CmGetFileSize (File);
     if (Size == ACPI_UINT32_MAX)
     {
-        printf ("Could not get file size for %s\n", Filename);
+        fprintf (stderr, "Could not get file size for %s\n", Filename);
         goto ErrorExit;
     }
 
@@ -776,7 +828,7 @@ AsGetFile (
     Buffer = calloc (Size * 2, 1);
     if (!Buffer)
     {
-        printf ("Could not allocate buffer of size %u\n", Size * 2);
+        fprintf (stderr, "Could not allocate buffer of size %u\n", Size * 2);
         goto ErrorExit;
     }
 
@@ -785,7 +837,7 @@ AsGetFile (
     Actual = fread (Buffer, 1, Size, File);
     if (Actual != Size)
     {
-        printf ("Could not read the input file %s (%u bytes)\n",
+        fprintf (stderr, "Could not read the input file %s (%u bytes)\n",
             Filename, Size);
         goto ErrorFree;
     }
@@ -862,8 +914,8 @@ AsPutFile (
     File = fopen (Pathname, "w+b");
     if (!File)
     {
-        perror ("Could not create destination file");
-        printf ("Could not create destination file \"%s\"\n", Pathname);
+        fprintf (stderr, "Could not create destination file \"%s\": %s\n",
+            Pathname, strerror (errno));
         return (-1);
     }
 
@@ -873,7 +925,7 @@ AsPutFile (
     Actual = fwrite (FileBuffer, 1, FileSize, File);
     if (Actual != FileSize)
     {
-        printf ("Error writing output file \"%s\"\n", Pathname);
+        fprintf (stderr, "Error writing output file \"%s\"\n", Pathname);
         Status = -1;
     }
 

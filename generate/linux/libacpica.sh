@@ -297,13 +297,13 @@ lindent()
 linuxize_format()
 {
 	echo " Converting (acpisrc -l)..."
-	$ACPISRC -ldqy $1 $1 > /dev/null
+	$ACPISRC -ldqy $1 $1 > /dev/null || exit 1
 
 	echo " Converting (indent)..."
 	lindent $1
 
 	echo " Converting (acpisrc -i)..."
-	$ACPISRC -idqy $1 $1 > /dev/null
+	$ACPISRC -idqy $1 $1 > /dev/null || exit 1
 }
 
 copy_linux_hierarchy()
