@@ -99,6 +99,16 @@ AsDoWildcard (
                 if (!AsCheckForDirectory (SourcePath, TargetPath, Filename,
                     &SourceDirPath, &TargetDirPath))
                 {
+                    /*
+                     * Lowercase only the new subdirectory name. The
+                     * caller supplied TargetPath must stay untouched,
+                     * as it may contain uppercase characters.
+                     */
+                    if (ConversionTable->Flags & FLG_LOWERCASE_DIRNAMES)
+                    {
+                        AcpiUtStrlwr (TargetDirPath + strlen (TargetPath) + 1);
+                    }
+
                     VERBOSE_PRINT (("Subdirectory: %s\n", Filename));
 
                     AsProcessTree (ConversionTable, SourceDirPath, TargetDirPath);
@@ -152,11 +162,6 @@ AsProcessTree (
 
     if (!(ConversionTable->Flags & FLG_NO_FILE_OUTPUT))
     {
-        if (ConversionTable->Flags & FLG_LOWERCASE_DIRNAMES)
-        {
-            AcpiUtStrlwr (TargetPath);
-        }
-
         VERBOSE_PRINT (("Creating Directory \"%s\"\n", TargetPath));
         if (mkdir (TargetPath))
         {
