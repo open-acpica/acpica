@@ -239,7 +239,10 @@ mv -f $GP_acpica_repo/generate/linux/linux-$before_name $GP_linux_before
 	if [ $? -ne 0 ]; then
 		generate_acpica_desc $after > $tmpdesc
 		generate_linux_desc $after_name $tmpdesc > $GP_linux_patch
-		$ACPISRC -ldqy $GP_linux_patch $GP_linux_patch > /dev/null
+		$ACPISRC -ldqy $GP_linux_patch $GP_linux_patch > /dev/null || {
+			rm -f $tmpdiff $tmpdesc $GP_linux_patch
+			exit 1
+		}
 		echo "---" >> $GP_linux_patch
 		diffstat $tmpdiff >> $GP_linux_patch
 		echo >> $GP_linux_patch
@@ -250,8 +253,11 @@ mv -f $GP_acpica_repo/generate/linux/linux-$before_name $GP_linux_before
 	rm -f $tmpdiff
 	rm -f $tmpdesc
 )
+status=$?
 
 # Cleanup temporary directories
 rm -rf $GP_linux_before
 rm -rf $GP_linux_after
 rm -rf $GP_acpica_repo
+
+exit $status
