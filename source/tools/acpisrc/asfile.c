@@ -15,7 +15,7 @@
 
 /* Local prototypes */
 
-void
+int
 AsDoWildcard (
     ACPI_CONVERSION_TABLE   *ConversionTable,
     char                    *SourcePath,
@@ -45,11 +45,14 @@ AsMaxInt (int a, int b)
  *
  * FUNCTION:    AsDoWildcard
  *
- * DESCRIPTION: Process files via wildcards
+ * DESCRIPTION: Process files via wildcards. All matching files are
+ *              processed, even if some of them fail.
+ *
+ * RETURN:      0 on success, -1 if any file or subdirectory failed
  *
  ******************************************************************************/
 
-void
+int
 AsDoWildcard (
     ACPI_CONVERSION_TABLE   *ConversionTable,
     char                    *SourcePath,
@@ -63,6 +66,7 @@ AsDoWildcard (
     char                    *SourceDirPath;
     char                    *TargetDirPath;
     char                    RequestedFileType;
+    int                     Status = 0;
 
 
     if (FileType == FILE_TYPE_DIRECTORY)
@@ -111,7 +115,12 @@ AsDoWildcard (
 
                     VERBOSE_PRINT (("Subdirectory: %s\n", Filename));
 
-                    AsProcessTree (ConversionTable, SourceDirPath, TargetDirPath);
+                    if (AsProcessTree (ConversionTable,
+                        SourceDirPath, TargetDirPath))
+                    {
+                        Status = -1;
+                    }
+
                     free (SourceDirPath);
                     free (TargetDirPath);
                 }
@@ -123,8 +132,11 @@ AsDoWildcard (
 
                 VERBOSE_PRINT (("File: %s\n", Filename));
 
-                AsProcessOneFile (ConversionTable, SourcePath, TargetPath,
-                    MaxPathLength, Filename, FileType);
+                if (AsProcessOneFile (ConversionTable, SourcePath, TargetPath,
+                    MaxPathLength, Filename, FileType))
+                {
+                    Status = -1;
+                }
                 break;
 
             default:
@@ -137,6 +149,8 @@ AsDoWildcard (
 
         AcpiOsCloseDirectory (DirInfo);
     }
+
+    return (Status);
 }
 
 
@@ -147,6 +161,9 @@ AsDoWildcard (
  * DESCRIPTION: Process the directory tree. Files with the extension ".C" and
  *              ".H" are processed as the tree is traversed.
  *
+ * RETURN:      0 on success, -1 if the target directory could not be
+ *              created or any file or subdirectory failed
+ *
  ******************************************************************************/
 
 ACPI_NATIVE_INT
@@ -156,6 +173,7 @@ AsProcessTree (
     char                    *TargetPath)
 {
     int                     MaxPathLength;
+    int                     Status = 0;
 
 
     MaxPathLength = AsMaxInt (strlen (SourcePath), strlen (TargetPath));
@@ -177,35 +195,53 @@ AsProcessTree (
 
     /* Do the C source files */
 
-    AsDoWildcard (ConversionTable, SourcePath, TargetPath, MaxPathLength,
-        FILE_TYPE_SOURCE, "*.c");
+    if (AsDoWildcard (ConversionTable, SourcePath, TargetPath, MaxPathLength,
+        FILE_TYPE_SOURCE, "*.c"))
+    {
+        Status = -1;
+    }
 
     /* Do the C header files */
 
-    AsDoWildcard (ConversionTable, SourcePath, TargetPath, MaxPathLength,
-        FILE_TYPE_HEADER, "*.h");
+    if (AsDoWildcard (ConversionTable, SourcePath, TargetPath, MaxPathLength,
+        FILE_TYPE_HEADER, "*.h"))
+    {
+        Status = -1;
+    }
 
     /* Do the Lex file(s) */
 
-    AsDoWildcard (ConversionTable, SourcePath, TargetPath, MaxPathLength,
-        FILE_TYPE_SOURCE, "*.l");
+    if (AsDoWildcard (ConversionTable, SourcePath, TargetPath, MaxPathLength,
+        FILE_TYPE_SOURCE, "*.l"))
+    {
+        Status = -1;
+    }
 
     /* Do the yacc file(s) */
 
-    AsDoWildcard (ConversionTable, SourcePath, TargetPath, MaxPathLength,
-        FILE_TYPE_SOURCE, "*.y");
+    if (AsDoWildcard (ConversionTable, SourcePath, TargetPath, MaxPathLength,
+        FILE_TYPE_SOURCE, "*.y"))
+    {
+        Status = -1;
+    }
 
     /* Do any ASL files */
 
-    AsDoWildcard (ConversionTable, SourcePath, TargetPath, MaxPathLength,
-        FILE_TYPE_HEADER, "*.asl");
+    if (AsDoWildcard (ConversionTable, SourcePath, TargetPath, MaxPathLength,
+        FILE_TYPE_HEADER, "*.asl"))
+    {
+        Status = -1;
+    }
 
     /* Do any subdirectories */
 
-    AsDoWildcard (ConversionTable, SourcePath, TargetPath, MaxPathLength,
-        FILE_TYPE_DIRECTORY, "*");
+    if (AsDoWildcard (ConversionTable, SourcePath, TargetPath, MaxPathLength,
+        FILE_TYPE_DIRECTORY, "*"))
+    {
+        Status = -1;
+    }
 
-    return (0);
+    return (Status);
 }
 
 
@@ -666,7 +702,12 @@ AsProcessOneFile (
                 strcat (OutPathname, Filename);
             }
 
-            AsPutFile (OutPathname, Gbl_FileBuffer, ConversionTable->Flags);
+            if (AsPutFile (OutPathname, Gbl_FileBuffer,
+                ConversionTable->Flags))
+            {
+                Status = -1;
+            }
+
             free (OutPathname);
         }
     }
