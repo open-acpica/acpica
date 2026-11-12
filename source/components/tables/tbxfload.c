@@ -157,6 +157,7 @@ AcpiTbLoadNamespace (
      * .Pointer field is not validated until after call to AcpiTbValidateTable.
      */
     AcpiGbl_DSDT = Table->Pointer;
+    AcpiUtSetIntegerWidth (AcpiGbl_DSDT->Revision);
 
     /*
      * Optionally copy the entire DSDT to local memory (instead of simply
