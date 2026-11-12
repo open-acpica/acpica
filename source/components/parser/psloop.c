@@ -152,6 +152,12 @@ AcpiPsGetArguments (
              *
              * Save the length and address of the body
              */
+            if (WalkState->ParserState.PkgEnd <
+                WalkState->ParserState.Aml)
+            {
+                return_ACPI_STATUS (AE_AML_PACKAGE_LIMIT);
+            }
+
             Op->Named.Data = WalkState->ParserState.Aml;
             Op->Named.Length = (UINT32)
                 (WalkState->ParserState.PkgEnd - WalkState->ParserState.Aml);
