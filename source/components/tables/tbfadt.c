@@ -598,8 +598,13 @@ AcpiTbConvertFadt (
                  * Note: If the legacy length field is > 0xFF bits, ignore
                  * this check. (GPE registers can be larger than the
                  * 64-bit GAS structure can accommodate, 0xFF bits).
-                 * Also skip if BitWidth is 0, indicating the 64-bit field
-                 * was not populated - legacy length will be used instead.
+                 *
+                 * Also skip if BitWidth is 0. If the 64-bit address field
+                 * was not populated then BitWidth will be copied from the
+                 * 32-bit legacy version later in ths function. However if
+                 * Address64->Address isn't NULL then for GPEs legacy length
+                 * will be used instead and for all the other FADT registers a
+                 * default value is applied in AcpiTbSetupFadtRegisters().
                  */
                 if ((ACPI_MUL_8 (Length) <= ACPI_UINT8_MAX) &&
                     (Address64->BitWidth != 0) &&
