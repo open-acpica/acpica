@@ -342,11 +342,12 @@ ACPI_RSDUMP_INFO        AcpiRsDumpCsi2SerialBus[11] =
     {ACPI_RSD_SOURCE,   ACPI_RSD_OFFSET (Csi2SerialBus.ResourceSource),     "ResourceSource",           NULL},
 };
 
-ACPI_RSDUMP_INFO        AcpiRsDumpI2cSerialBus[14] =
+ACPI_RSDUMP_INFO        AcpiRsDumpI2cSerialBus[15] =
 {
     {ACPI_RSD_TITLE,    ACPI_RSD_TABLE_SIZE (AcpiRsDumpI2cSerialBus),       "I2C Serial Bus",           NULL},
     ACPI_RS_DUMP_COMMON_SERIAL_BUS
     {ACPI_RSD_1BITFLAG, ACPI_RSD_OFFSET (I2cSerialBus.AccessMode),          "AccessMode",               AcpiGbl_AmDecode},
+    {ACPI_RSD_UINT8,    ACPI_RSD_OFFSET (I2cSerialBus.Lvr),                 "Lvr",                      NULL},
     {ACPI_RSD_UINT32,   ACPI_RSD_OFFSET (I2cSerialBus.ConnectionSpeed),     "ConnectionSpeed",          NULL},
     {ACPI_RSD_UINT16,   ACPI_RSD_OFFSET (I2cSerialBus.SlaveAddress),        "SlaveAddress",             NULL},
 };
