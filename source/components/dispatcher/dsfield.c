@@ -564,6 +564,17 @@ AcpiDsCreateField (
     if (Info.RegionNode->Object->Region.SpaceId == ACPI_ADR_SPACE_PLATFORM_COMM &&
         !RegionNode->Object->Field.InternalPccBuffer)
     {
+      /*
+       * If AOPOBJ_DATA_VALID flag is not set the region operands is not
+       * evaluated (e.g. disassembler), nothing to allocate.
+       * Also avoid a zero-size allocation which may yield a non-NULL pointer
+       */
+
+      if (!(Info.RegionNode->Object->Common.Flags & AOPOBJ_DATA_VALID) ||
+          (!Info.RegionNode->Object->Region.Length)) {
+        return_ACPI_STATUS(AE_OK);
+      }
+
         RegionNode->Object->Field.InternalPccBuffer =
             ACPI_ALLOCATE_ZEROED(Info.RegionNode->Object->Region.Length);
         if (!RegionNode->Object->Field.InternalPccBuffer)
