@@ -141,6 +141,20 @@ AcpiPsGetNextPackageEnd (
 
     PackageLength = AcpiPsGetNextPackageLength (ParserState);
 
+    /*
+     * Package length needs to be at least as long as the bytes that encode it,
+     * and can't be longer than the object length described by AmlEnd. Also if
+     * the Aml pointer didn't move something went wrong since
+     * AcpiPsGetNextPackageLength should have moved the pointer past the
+     * encoding bytes.
+     */
+    if ((ParserState->Aml == Start) ||
+        (PackageLength < ACPI_PTR_DIFF (ParserState->Aml, Start)) ||
+        (PackageLength > ACPI_PTR_DIFF (ParserState->AmlEnd, Start)))
+    {
+        return_PTR (NULL);
+    }
+
     return_PTR (Start + PackageLength); /* end of package */
 }
 
@@ -973,8 +987,7 @@ AcpiPsGetNextArg (
         /* Package length, nothing returned */
 
         ParserState->PkgEnd = AcpiPsGetNextPackageEnd (ParserState);
-        if ((ParserState->PkgEnd > ParserState->AmlEnd) ||
-            (ParserState->PkgEnd < ParserState->Aml))
+        if (!ParserState->PkgEnd)
         {
             return_ACPI_STATUS (AE_AML_PACKAGE_LIMIT);
         }

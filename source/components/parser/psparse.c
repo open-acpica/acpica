@@ -327,7 +327,6 @@ AcpiPsNextParseState (
 {
     ACPI_PARSE_STATE        *ParserState = &WalkState->ParserState;
     ACPI_STATUS             Status = AE_CTRL_PENDING;
-    UINT8                   *Aml;
 
 
     ACPI_FUNCTION_TRACE_PTR (PsNextParseState, Op);
@@ -375,11 +374,9 @@ AcpiPsNextParseState (
          * Predicate of an IF was true, and we are at the matching ELSE.
          * Just close out this package
          */
-        Aml = ParserState->Aml;
 
         ParserState->Aml = AcpiPsGetNextPackageEnd (ParserState);
-        if ((ParserState->Aml > ParserState->AmlEnd) ||
-            (ParserState->Aml < Aml))
+        if (!ParserState->Aml)
         {
             Status = AE_AML_PACKAGE_LIMIT;
             break;

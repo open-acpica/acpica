@@ -369,8 +369,7 @@ AcpiPsParseLoop (
 
                     WalkState->ParserState.Aml =
                         AcpiPsGetNextPackageEnd(&WalkState->ParserState);
-                    if ((WalkState->ParserState.Aml > WalkState->ParserState.AmlEnd) ||
-                        (WalkState->ParserState.Aml < WalkState->Aml))
+                    if (!WalkState->ParserState.Aml)
                     {
                         return_ACPI_STATUS (AE_AML_PACKAGE_LIMIT);
                     }
@@ -430,8 +429,7 @@ AcpiPsParseLoop (
                         WalkState->ControlState->Control.AmlPredicateStart + 1;
                     ParserState->Aml =
                         AcpiPsGetNextPackageEnd (ParserState);
-                    if ((ParserState->Aml > ParserState->AmlEnd) ||
-                        (ParserState->Aml < WalkState->ControlState->Control.AmlPredicateStart))
+                    if (!ParserState->Aml)
                     {
                         return_ACPI_STATUS (AE_AML_PACKAGE_LIMIT);
                     }
@@ -445,8 +443,7 @@ AcpiPsParseLoop (
                         WalkState->ParserState.Aml = WalkState->Aml + 1;
                         WalkState->ParserState.Aml =
                             AcpiPsGetNextPackageEnd (ParserState);
-                        if ((WalkState->ParserState.Aml > WalkState->ParserState.AmlEnd) ||
-                            (WalkState->ParserState.Aml < WalkState->Aml))
+                        if (!WalkState->ParserState.Aml)
                         {
                             return_ACPI_STATUS (AE_AML_PACKAGE_LIMIT);
                         }
