@@ -71,12 +71,12 @@ AcpiPsGetNextPackageLength (
      */
 
     /* Check if we have at least one byte to read */
-    Remaining = (UINT32) ACPI_PTR_DIFF (ParserState->AmlEnd, Aml);
-    if (Remaining == 0)
+    if (ParserState->AmlEnd < Aml)
     {
         return_UINT32 (0);
     }
 
+    Remaining = (UINT32) ACPI_PTR_DIFF (ParserState->AmlEnd, Aml);
     ByteCount = (Aml[0] >> 6);
 
     /* Validate ByteCount and ensure we have enough bytes to read */
