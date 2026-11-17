@@ -637,9 +637,9 @@ AcpiPsGetNextField (
     UINT8                   AccessType;
     UINT8                   AccessAttribute;
     UINT8                   AccessLength;
-    UINT32                  PkgLength;
     UINT8                   *PkgEnd;
     UINT32                  BufferLength;
+    UINT8                   OpSize;
 
 
     ACPI_FUNCTION_TRACE (PsGetNextField);
@@ -787,6 +787,12 @@ AcpiPsGetNextField (
 
     case AML_INT_CONNECTION_OP:
 
+        if (ParserState->Aml >= ParserState->AmlEnd)
+        {
+            AcpiPsFreeOp (Field);
+            return_PTR (NULL);
+        }
+
         /*
          * Argument for Connection operator can be either a Buffer
          * (resource descriptor), or a NameString.
@@ -797,17 +803,23 @@ AcpiPsGetNextField (
             ParserState->Aml++;
 
             ASL_CV_CAPTURE_COMMENTS_ONLY (ParserState);
-            PkgEnd = ParserState->Aml;
-            PkgLength = AcpiPsGetNextPackageLength (ParserState);
-            PkgEnd += PkgLength;
+            PkgEnd = AcpiPsGetNextPackageEnd (ParserState);
+            if (!PkgEnd)
+            {
+                AcpiPsFreeOp (Field);
+                return_PTR (NULL);
+            }
 
             ASL_CV_CAPTURE_COMMENTS_ONLY (ParserState);
             if (ParserState->Aml < PkgEnd)
             {
-                /* Non-empty list */
+                /*
+                 * Non-empty list - check allocation success and whether Aml
+                 * won't go past AmlEnd
+                 */
 
                 Arg = AcpiPsAllocOp (AML_INT_BYTELIST_OP, Aml);
-                if (!Arg)
+                if (ParserState->Aml >= ParserState->AmlEnd || !Arg)
                 {
                     AcpiPsFreeOp (Field);
                     return_PTR (NULL);
@@ -822,28 +834,47 @@ AcpiPsGetNextField (
                 switch (Opcode)
                 {
                 case AML_BYTE_OP:       /* AML_BYTEDATA_ARG */
-
-                    BufferLength = ACPI_GET8 (ParserState->Aml);
-                    ParserState->Aml += 1;
-                    break;
-
                 case AML_WORD_OP:       /* AML_WORDDATA_ARG */
-
-                    BufferLength = ACPI_GET16 (ParserState->Aml);
-                    ParserState->Aml += 2;
-                    break;
-
                 case AML_DWORD_OP:      /* AML_DWORDATA_ARG */
 
+                    OpSize = 1 << (Opcode - AML_BYTE_OP);
+                    break;
+
+                default:
+
+                    OpSize = 0;
+                }
+
+                /* Check if we can safely read OpSize byte of data */
+                if ((ParserState->Aml + OpSize) > ParserState->AmlEnd || !Arg)
+                {
+                    AcpiPsFreeOp (Field);
+                    return_PTR (NULL);
+                }
+
+                switch (OpSize)
+                {
+                case 1:
+
+                    BufferLength = ACPI_GET8 (ParserState->Aml);
+                    break;
+
+                case 2:
+
+                    BufferLength = ACPI_GET16 (ParserState->Aml);
+                    break;
+
+                case 4:
+
                     BufferLength = ACPI_GET32 (ParserState->Aml);
-                    ParserState->Aml += 4;
                     break;
 
                 default:
 
                     BufferLength = 0;
-                    break;
                 }
+
+                ParserState->Aml += OpSize;
 
                 /* Fill in bytelist data */
 
