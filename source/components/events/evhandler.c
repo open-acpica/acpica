@@ -152,13 +152,6 @@ AcpiEvHasDefaultHandler (
 
         while (HandlerObj)
         {
-            /* Validate handler object type before accessing fields */
-
-            if (HandlerObj->Common.Type != ACPI_TYPE_LOCAL_ADDRESS_HANDLER)
-            {
-                break;
-            }
-
             if (HandlerObj->AddressSpace.SpaceId == SpaceId)
             {
                 if (HandlerObj->AddressSpace.HandlerFlags &
@@ -329,11 +322,6 @@ AcpiEvFindRegionHandler (
 
     while (HandlerObj)
     {
-        if (HandlerObj->Common.Type != ACPI_TYPE_LOCAL_ADDRESS_HANDLER)
-        {
-            break;
-        }
-
         /* Same SpaceId indicates a handler is installed */
 
         if (HandlerObj->AddressSpace.SpaceId == SpaceId)
