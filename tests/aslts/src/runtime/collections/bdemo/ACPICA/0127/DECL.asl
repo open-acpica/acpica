@@ -29,24 +29,70 @@
      * Bug 127:
      *
      * SUMMARY: Unexpectedly CopyObject of immediately passed Index reference is not reference
+     *
+     * CopyObject (Index (...), LocalX) and the chained Store
+     * LocalY = LocalX = Index (...) must leave the Index reference in the
+     * Locals, not a copy of the referenced element. Per the ACPI
+     * specification ("LocalX Objects"), reading LocalX that holds an
+     * ObjectReference returns the reference and only DerefOf returns the
+     * target, so:
+     *
+     *  - for the initialized element PD11 [0], DerefOf (LocalX) must yield
+     *    the element and, after the element is modified, the new value,
+     *    which proves that LocalX refers to the element itself,
+     *  - for the uninitialized element PD11 [1], DerefOf (LocalX) must
+     *    raise AE_AML_UNINITIALIZED_ELEMENT ("DerefOf": dereferencing an
+     *    Index reference to an uninitialized package element is a fatal
+     *    error); only a reference to that element can produce it. If the
+     *    copy dereferenced the Index, the exception would already occur
+     *    in the Store or CopyObject itself.
+     *
+     * Formerly the check expected AE_AML_OPERAND_TYPE from Add (LocalX, 0).
+     * The interpreter now resolves an Index reference held in LocalX when
+     * it is used as an integer operand, so that exception no longer occurs
+     * and can no longer serve as a proof that the reference was preserved.
      */
     /* Store */
     Method (MF13, 0, NotSerialized)
     {
         Local1 = Local0 = PD11 [0x00]
         CH03 (__METHOD__, 0x00, __LINE__, 0x00, 0x00)
-        Store ((Local0 + 0x00), Local2)
-        CH04 (__METHOD__, 0x01, 0x2F, 0x00, __LINE__, 0x00, 0x00) /* AE_AML_OPERAND_TYPE */
+        Local2 = DerefOf (Local0)
+        Local3 = DerefOf (Local1)
         CH03 (__METHOD__, 0x00, __LINE__, 0x00, 0x00)
-        Store ((Local1 + 0x00), Local2)
-        CH04 (__METHOD__, 0x01, 0x2F, 0x00, __LINE__, 0x00, 0x00) /* AE_AML_OPERAND_TYPE */
+        If ((Local2 != 0x01))
+        {
+            ERR (__METHOD__, ZFFF, __LINE__, 0x00, 0x00, Local2, 0x01)
+        }
+
+        If ((Local3 != 0x01))
+        {
+            ERR (__METHOD__, ZFFF, __LINE__, 0x00, 0x00, Local3, 0x01)
+        }
+
+        PD11 [0x00] = 0x11
+        Local2 = DerefOf (Local0)
+        Local3 = DerefOf (Local1)
+        CH03 (__METHOD__, 0x00, __LINE__, 0x00, 0x00)
+        If ((Local2 != 0x11))
+        {
+            ERR (__METHOD__, ZFFF, __LINE__, 0x00, 0x00, Local2, 0x11)
+        }
+
+        If ((Local3 != 0x11))
+        {
+            ERR (__METHOD__, ZFFF, __LINE__, 0x00, 0x00, Local3, 0x11)
+        }
+
+        PD11 [0x00] = 0x01
+        /* Uninitialized element: dereferencing it is a fatal error */
+
         Local1 = Local0 = PD11 [0x01]
         CH03 (__METHOD__, 0x00, __LINE__, 0x00, 0x00)
-        Store ((Local0 + 0x00), Local2)
-        CH04 (__METHOD__, 0x01, 0x2F, 0x00, __LINE__, 0x00, 0x00) /* AE_AML_OPERAND_TYPE */
-        CH03 (__METHOD__, 0x00, __LINE__, 0x00, 0x00)
-        Store ((Local1 + 0x00), Local2)
-        CH04 (__METHOD__, 0x01, 0x2F, 0x00, __LINE__, 0x00, 0x00) /* AE_AML_OPERAND_TYPE */
+        Local2 = DerefOf (Local0)
+        CH04 (__METHOD__, 0x01, 0x33, 0x00, __LINE__, 0x00, 0x00) /* AE_AML_UNINITIALIZED_ELEMENT */
+        Local2 = DerefOf (Local1)
+        CH04 (__METHOD__, 0x01, 0x33, 0x00, __LINE__, 0x00, 0x00) /* AE_AML_UNINITIALIZED_ELEMENT */
     }
 
     /* CopyObject */
@@ -55,11 +101,34 @@
     {
         CopyObject (Local0 = PD11 [0x00], Local1)
         CH03 (__METHOD__, 0x00, __LINE__, 0x00, 0x00)
-        Store ((Local0 + 0x00), Local2)
-        CH04 (__METHOD__, 0x01, 0x2F, 0x00, __LINE__, 0x00, 0x00) /* AE_AML_OPERAND_TYPE */
+        Local2 = DerefOf (Local0)
+        Local3 = DerefOf (Local1)
         CH03 (__METHOD__, 0x00, __LINE__, 0x00, 0x00)
-        Store ((Local1 + 0x00), Local2)
-        CH04 (__METHOD__, 0x01, 0x2F, 0x00, __LINE__, 0x00, 0x00) /* AE_AML_OPERAND_TYPE */
+        If ((Local2 != 0x01))
+        {
+            ERR (__METHOD__, ZFFF, __LINE__, 0x00, 0x00, Local2, 0x01)
+        }
+
+        If ((Local3 != 0x01))
+        {
+            ERR (__METHOD__, ZFFF, __LINE__, 0x00, 0x00, Local3, 0x01)
+        }
+
+        PD11 [0x00] = 0x11
+        Local2 = DerefOf (Local0)
+        Local3 = DerefOf (Local1)
+        CH03 (__METHOD__, 0x00, __LINE__, 0x00, 0x00)
+        If ((Local2 != 0x11))
+        {
+            ERR (__METHOD__, ZFFF, __LINE__, 0x00, 0x00, Local2, 0x11)
+        }
+
+        If ((Local3 != 0x11))
+        {
+            ERR (__METHOD__, ZFFF, __LINE__, 0x00, 0x00, Local3, 0x11)
+        }
+
+        PD11 [0x00] = 0x01
     }
 
     Method (MF15, 0, NotSerialized)
@@ -67,11 +136,10 @@
         CH03 (__METHOD__, 0x00, __LINE__, 0x00, 0x00)
         CopyObject (Local0 = PD11 [0x01], Local1)
         CH03 (__METHOD__, 0x00, __LINE__, 0x00, 0x00)
-        Store ((Local0 + 0x00), Local2)
-        CH04 (__METHOD__, 0x01, 0x2F, 0x00, __LINE__, 0x00, 0x00) /* AE_AML_OPERAND_TYPE */
-        CH03 (__METHOD__, 0x00, __LINE__, 0x00, 0x00)
-        Store ((Local1 + 0x00), Local2)
-        CH04 (__METHOD__, 0x01, 0x2F, 0x00, __LINE__, 0x00, 0x00) /* AE_AML_OPERAND_TYPE */
+        Local2 = DerefOf (Local0)
+        CH04 (__METHOD__, 0x01, 0x33, 0x00, __LINE__, 0x00, 0x00) /* AE_AML_UNINITIALIZED_ELEMENT */
+        Local2 = DerefOf (Local1)
+        CH04 (__METHOD__, 0x01, 0x33, 0x00, __LINE__, 0x00, 0x00) /* AE_AML_UNINITIALIZED_ELEMENT */
     }
 
     Method (MF16, 0, NotSerialized)
