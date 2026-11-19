@@ -85,6 +85,11 @@ AcpiDbAddToHistory (
             AcpiOsAllocate (CmdLen + 1);
     }
 
+    if (!AcpiGbl_HistoryBuffer[AcpiGbl_NextHistoryIndex].Command)
+    {
+        return;
+    }
+
     strcpy (AcpiGbl_HistoryBuffer[AcpiGbl_NextHistoryIndex].Command,
         CommandLine);
 
