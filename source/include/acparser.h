@@ -69,7 +69,7 @@ char *
 AcpiPsGetNextNamestring (
     ACPI_PARSE_STATE        *ParserState);
 
-void
+ACPI_STATUS
 AcpiPsGetNextSimpleArg (
     ACPI_PARSE_STATE        *ParserState,
     UINT32                  ArgType,

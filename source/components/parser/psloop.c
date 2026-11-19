@@ -81,8 +81,12 @@ AcpiPsGetArguments (
 
         /* Fill in constant or string argument directly */
 
-        AcpiPsGetNextSimpleArg (&(WalkState->ParserState),
+        Status = AcpiPsGetNextSimpleArg (&(WalkState->ParserState),
             GET_CURRENT_ARG_TYPE (WalkState->ArgTypes), Op);
+        if (ACPI_FAILURE (Status))
+        {
+            return_ACPI_STATUS (Status);
+        }
         break;
 
     case AML_INT_NAMEPATH_OP:   /* AML_NAMESTRING_ARG */
