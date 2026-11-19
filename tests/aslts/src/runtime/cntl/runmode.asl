@@ -226,7 +226,7 @@
     Name (Y126, 0x00)
     Name (Y127, 0x00)   /* Automatic dereference of Index in CopyObject */
     Name (Y128, 0x01)
-    Name (Y132, 0x00)
+    Name (Y132, 0x01)   /* Read access automatic dereference for Index reference, implemented in aaa58f4b62a9 */
     Name (Y133, 0x00)   /* Write access automatic dereference for Index reference */
     Name (Y134, 0x00)
     Name (Y135, 0x00)
