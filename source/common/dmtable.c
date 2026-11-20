@@ -397,6 +397,49 @@ static const char           *AcpiDmRgrtSubnames[] =
     "Type PNG"                      /* ACPI_RGRT_IMAGE_TYPE_PNG */
 };
 
+/*
+ * RQSC type values 0x80 to 0xFF are designated for vendor specific use.
+ * Each array below ends with the names for a reserved and for a vendor
+ * specific type. The defines give the index of these two names.
+ */
+#define ACPI_RQSC_TYPE_VENDOR           0x80
+
+#define ACPI_RQSC_CONTROLLER_RESERVED   2
+#define ACPI_RQSC_CONTROLLER_VENDOR     3
+
+static const char           *AcpiDmRqscControllerNames[] =
+{
+    "Capacity",             /* ACPI_RQSC_CONTROLLER_TYPE_CAPACITY */
+    "Bandwidth",            /* ACPI_RQSC_CONTROLLER_TYPE_BANDWIDTH */
+    "Reserved",             /* Reserved for future standard use */
+    "Vendor Specific"       /* Types 80-FF are for vendor specific use */
+};
+
+#define ACPI_RQSC_ID_RESERVED           5
+#define ACPI_RQSC_ID_VENDOR             6
+
+static const char           *AcpiDmRqscIdNames[] =
+{
+    "Processor Cache",      /* ACPI_RQSC_RESOURCE_ID_TYPE_PROCESSOR_CACHE */
+    "Memory Range",         /* ACPI_RQSC_RESOURCE_ID_TYPE_MEMORY_RANGE */
+    "Memory-Side Cache",    /* ACPI_RQSC_RESOURCE_ID_TYPE_MEMORY_SIDE_CACHE */
+    "ACPI Device",          /* ACPI_RQSC_RESOURCE_ID_TYPE_ACPI_DEVICE */
+    "PCI Device",           /* ACPI_RQSC_RESOURCE_ID_TYPE_PCI_DEVICE */
+    "Reserved",             /* Reserved for future standard use */
+    "Vendor Specific"       /* Types 80-FF are for vendor specific use */
+};
+
+#define ACPI_RQSC_RESOURCE_RESERVED     2
+#define ACPI_RQSC_RESOURCE_VENDOR       3
+
+static const char           *AcpiDmRqscResourceNames[] =
+{
+    "Cache",                /* ACPI_RQSC_RESOURCE_TYPE_CACHE */
+    "Memory",               /* ACPI_RQSC_RESOURCE_TYPE_MEMORY */
+    "Reserved",             /* Reserved for future standard use */
+    "Vendor Specific"       /* Types 80-FF are for vendor specific use */
+};
+
 static const char           *AcpiDmSdevSubnames[] =
 {
     "Namespace Device",             /* ACPI_SDEV_TYPE_NAMESPACE_DEVICE */
@@ -619,6 +662,7 @@ const ACPI_DMTABLE_DATA     AcpiDmTableData[] =
     {ACPI_SIG_RGRT, NULL,                   AcpiDmDumpRgrt, DtCompileRgrt,  TemplateRgrt},
     {ACPI_SIG_RHCT, NULL,                   AcpiDmDumpRhct, DtCompileRhct,  TemplateRhct},
     {ACPI_SIG_RIMT, NULL,                   AcpiDmDumpRimt, DtCompileRimt,  TemplateRimt},
+    {ACPI_SIG_RQSC, NULL,                   AcpiDmDumpRqsc, DtCompileRqsc,  TemplateRqsc},
     {ACPI_SIG_RSDT, NULL,                   AcpiDmDumpRsdt, DtCompileRsdt,  TemplateRsdt},
     {ACPI_SIG_S3PT, NULL,                   NULL,           NULL,           TemplateS3pt},
     {ACPI_SIG_SBST, AcpiDmTableInfoSbst,    NULL,           NULL,           TemplateSbst},
@@ -1042,6 +1086,9 @@ AcpiDmDumpTable (
         case ACPI_DMT_PMTT:
         case ACPI_DMT_PPTT:
         case ACPI_DMT_RGRT:
+        case ACPI_DMT_RQSC_CONTROLLER:
+        case ACPI_DMT_RQSC_ID:
+        case ACPI_DMT_RQSC_RESOURCE:
         case ACPI_DMT_SDEV:
         case ACPI_DMT_SRAT:
         case ACPI_DMT_AEST:
@@ -2006,6 +2053,60 @@ AcpiDmDumpTable (
 
             AcpiOsPrintf (UINT16_FORMAT, ACPI_GET16 (Target),
                 AcpiDmRhctSubnames[Temp16]);
+            break;
+
+        case ACPI_DMT_RQSC_CONTROLLER:
+
+            /* RQSC controller types */
+
+            Temp8 = *Target;
+            if (Temp8 >= ACPI_RQSC_TYPE_VENDOR)
+            {
+                Temp8 = ACPI_RQSC_CONTROLLER_VENDOR;
+            }
+            else if (Temp8 > ACPI_RQSC_CONTROLLER_RESERVED)
+            {
+                Temp8 = ACPI_RQSC_CONTROLLER_RESERVED;
+            }
+
+            AcpiOsPrintf (UINT8_FORMAT, *Target,
+                AcpiDmRqscControllerNames[Temp8]);
+            break;
+
+        case ACPI_DMT_RQSC_ID:
+
+            /* RQSC resource ID types */
+
+            Temp8 = *Target;
+            if (Temp8 >= ACPI_RQSC_TYPE_VENDOR)
+            {
+                Temp8 = ACPI_RQSC_ID_VENDOR;
+            }
+            else if (Temp8 > ACPI_RQSC_ID_RESERVED)
+            {
+                Temp8 = ACPI_RQSC_ID_RESERVED;
+            }
+
+            AcpiOsPrintf (UINT8_FORMAT, *Target,
+                AcpiDmRqscIdNames[Temp8]);
+            break;
+
+        case ACPI_DMT_RQSC_RESOURCE:
+
+            /* RQSC resource types */
+
+            Temp8 = *Target;
+            if (Temp8 >= ACPI_RQSC_TYPE_VENDOR)
+            {
+                Temp8 = ACPI_RQSC_RESOURCE_VENDOR;
+            }
+            else if (Temp8 > ACPI_RQSC_RESOURCE_RESERVED)
+            {
+                Temp8 = ACPI_RQSC_RESOURCE_RESERVED;
+            }
+
+            AcpiOsPrintf (UINT8_FORMAT, *Target,
+                AcpiDmRqscResourceNames[Temp8]);
             break;
 
         case ACPI_DMT_SDEV:

@@ -3049,6 +3049,134 @@ AcpiDmDumpRimt (
 
 /*******************************************************************************
  *
+ * FUNCTION:    AcpiDmDumpRqsc
+ *
+ * PARAMETERS:  Table               - A RQSC table
+ *
+ * RETURN:      None
+ *
+ * DESCRIPTION: Format the contents of a RQSC. This table consists of the
+ *              main table followed by Quality of Service Controller
+ *              Structures. Each of them is followed by its Resource
+ *              Structures, and a Resource Structure can be followed by
+ *              Resource Specific Data.
+ *
+ ******************************************************************************/
+
+void
+AcpiDmDumpRqsc (
+    ACPI_TABLE_HEADER       *Table)
+{
+    ACPI_STATUS             Status;
+    ACPI_RQSC_CONTROLLER    *Controller;
+    ACPI_RQSC_RESOURCE      *Resource;
+    ACPI_DMTABLE_INFO       *InfoTable;
+    UINT32                  Length = Table->Length;
+    UINT32                  Offset = sizeof (ACPI_TABLE_RQSC);
+    UINT32                  ControllerEnd;
+    UINT32                  ResourceOffset;
+    UINT32                  DataLength;
+
+
+    /* Main table */
+
+    Status = AcpiDmDumpTable (Length, 0, Table, 0, AcpiDmTableInfoRqsc);
+    if (ACPI_FAILURE (Status))
+    {
+        return;
+    }
+
+    /* Quality of Service Controller Structures */
+
+    while (Offset < Length)
+    {
+        Controller = ACPI_ADD_PTR (ACPI_RQSC_CONTROLLER, Table, Offset);
+        if ((Length - Offset) < sizeof (ACPI_RQSC_CONTROLLER))
+        {
+            AcpiOsPrintf ("Invalid RQSC controller structure length\n");
+            return;
+        }
+
+        AcpiOsPrintf ("\n");
+        Status = AcpiDmDumpTable (Length, Offset, Controller,
+            sizeof (ACPI_RQSC_CONTROLLER), AcpiDmTableInfoRqscController);
+        if (ACPI_FAILURE (Status))
+        {
+            return;
+        }
+
+        if ((Controller->Length < sizeof (ACPI_RQSC_CONTROLLER)) ||
+            (Controller->Length > (Length - Offset)))
+        {
+            AcpiOsPrintf ("Invalid RQSC controller length\n");
+            return;
+        }
+
+        /* Resource Structures */
+
+        ControllerEnd = Offset + Controller->Length;
+        ResourceOffset = Offset + sizeof (ACPI_RQSC_CONTROLLER);
+
+        while (ResourceOffset < ControllerEnd)
+        {
+            Resource = ACPI_ADD_PTR (ACPI_RQSC_RESOURCE, Table, ResourceOffset);
+            if ((ControllerEnd - ResourceOffset) < sizeof (ACPI_RQSC_RESOURCE))
+            {
+                AcpiOsPrintf ("Invalid RQSC resource structure length\n");
+                return;
+            }
+
+            AcpiOsPrintf ("\n");
+            Status = AcpiDmDumpTable (Length, ResourceOffset, Resource,
+                sizeof (ACPI_RQSC_RESOURCE), AcpiDmTableInfoRqscResource);
+            if (ACPI_FAILURE (Status))
+            {
+                return;
+            }
+
+            if ((Resource->Length < sizeof (ACPI_RQSC_RESOURCE)) ||
+                (Resource->Length > (ControllerEnd - ResourceOffset)))
+            {
+                AcpiOsPrintf ("Invalid RQSC resource length\n");
+                return;
+            }
+
+            /* Resource Specific Data */
+
+            DataLength = Resource->Length - sizeof (ACPI_RQSC_RESOURCE);
+            if (DataLength)
+            {
+                InfoTable = AcpiDmTableInfoRqscData;
+                if ((Resource->Type == ACPI_RQSC_RESOURCE_TYPE_MEMORY) &&
+                    (DataLength == sizeof (ACPI_RQSC_MEMORY_DATA)))
+                {
+                    InfoTable = AcpiDmTableInfoRqscMemory;
+                }
+
+                Status = AcpiDmDumpTable (Length,
+                    ResourceOffset + sizeof (ACPI_RQSC_RESOURCE),
+                    ACPI_ADD_PTR (UINT8, Resource, sizeof (ACPI_RQSC_RESOURCE)),
+                    DataLength, InfoTable);
+                if (ACPI_FAILURE (Status))
+                {
+                    return;
+                }
+            }
+
+            /* Point to next Resource Structure */
+
+            ResourceOffset += Resource->Length;
+        }
+
+        /* Point to next Controller Structure */
+
+        Offset += Controller->Length;
+    }
+}
+
+
+/*******************************************************************************
+ *
  * FUNCTION:    AcpiDmDumpS3pt
  *
  * PARAMETERS:  Table               - A S3PT table

@@ -2020,6 +2020,127 @@ DtCompileRhct (
 
 /******************************************************************************
  *
+ * FUNCTION:    DtCompileRqsc
+ *
+ * PARAMETERS:  List                - Current field list pointer
+ *
+ * RETURN:      Status
+ *
+ * DESCRIPTION: Compile RQSC. The Length fields, the number of controllers
+ *              and the number of resources of each controller are set
+ *              from the structures that are present.
+ *
+ *****************************************************************************/
+
+ACPI_STATUS
+DtCompileRqsc (
+    void                    **List)
+{
+    ACPI_STATUS             Status;
+    DT_SUBTABLE             *Subtable;
+    DT_SUBTABLE             *ParentTable;
+    DT_FIELD                **PFieldList = (DT_FIELD **) List;
+    ACPI_TABLE_RQSC         *Rqsc;
+    ACPI_RQSC_CONTROLLER    *Controller;
+    ACPI_RQSC_RESOURCE      *Resource;
+    ACPI_DMTABLE_INFO       *InfoTable;
+
+
+    /* Main table */
+
+    Status = DtCompileTable (PFieldList, AcpiDmTableInfoRqsc, &Subtable);
+    if (ACPI_FAILURE (Status))
+    {
+        return (Status);
+    }
+
+    ParentTable = DtPeekSubtable ();
+    DtInsertSubtable (ParentTable, Subtable);
+
+    /*
+     * Using ACPI_SUB_PTR, we needn't define a separate structure. Care should
+     * be taken to avoid accessing ACPI_TABLE_HEADER fields.
+     */
+    Rqsc = ACPI_SUB_PTR (ACPI_TABLE_RQSC, Subtable->Buffer,
+        sizeof (ACPI_TABLE_HEADER));
+    Rqsc->NumControllers = 0;
+
+    /* Quality of Service Controller Structures */
+
+    while (*PFieldList)
+    {
+        Status = DtCompileTable (PFieldList, AcpiDmTableInfoRqscController,
+            &Subtable);
+        if (ACPI_FAILURE (Status))
+        {
+            return (Status);
+        }
+
+        ParentTable = DtPeekSubtable ();
+        DtInsertSubtable (ParentTable, Subtable);
+        DtPushSubtable (Subtable);
+
+        Controller = ACPI_CAST_PTR (ACPI_RQSC_CONTROLLER, Subtable->Buffer);
+        Controller->NumResources = 0;
+        Rqsc->NumControllers++;
+
+        /* Resource Structures */
+
+        while (*PFieldList && !strcmp ((*PFieldList)->Name, "Resource Type"))
+        {
+            Status = DtCompileTable (PFieldList, AcpiDmTableInfoRqscResource,
+                &Subtable);
+            if (ACPI_FAILURE (Status))
+            {
+                return (Status);
+            }
+
+            ParentTable = DtPeekSubtable ();
+            DtInsertSubtable (ParentTable, Subtable);
+            DtPushSubtable (Subtable);
+
+            Resource = ACPI_CAST_PTR (ACPI_RQSC_RESOURCE, Subtable->Buffer);
+            Controller->NumResources++;
+
+            /*
+             * Optional Resource Specific Data. It is the Bandwidth per Block
+             * of a Memory resource or a raw buffer, as the disassembler
+             * emits it.
+             */
+            if (*PFieldList)
+            {
+                InfoTable = AcpiDmTableInfoRqscData;
+                if ((Resource->Type == ACPI_RQSC_RESOURCE_TYPE_MEMORY) &&
+                    !strcmp ((*PFieldList)->Name, "Bandwidth per Block"))
+                {
+                    InfoTable = AcpiDmTableInfoRqscMemory;
+                }
+
+                Status = DtCompileTable (PFieldList, InfoTable, &Subtable);
+                if (ACPI_FAILURE (Status))
+                {
+                    return (Status);
+                }
+
+                if (Subtable)
+                {
+                    ParentTable = DtPeekSubtable ();
+                    DtInsertSubtable (ParentTable, Subtable);
+                }
+            }
+
+            DtPopSubtable ();
+        }
+
+        DtPopSubtable ();
+    }
+
+    return (AE_OK);
+}
+
+
+/******************************************************************************
+ *
  * FUNCTION:    DtCompileRsdt
  *
  * PARAMETERS:  List                - Current field list pointer

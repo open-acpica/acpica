@@ -2393,6 +2393,68 @@ ACPI_DMTABLE_INFO           AcpiDmTableInfoRimtPlatDevPad[] =
 
 /*******************************************************************************
  *
+ * RQSC - RISC-V Quality of Service Controllers Table
+ *
+ * https://github.com/riscv-non-isa/riscv-rqsc
+ *
+ ******************************************************************************/
+
+ACPI_DMTABLE_INFO           AcpiDmTableInfoRqsc[] =
+{
+    {ACPI_DMT_UINT32,   ACPI_RQSC_OFFSET (NumControllers),          "Number of QoS Controllers", 0},
+    ACPI_DMT_TERMINATOR
+};
+
+/* Quality of Service Controller Structure */
+
+ACPI_DMTABLE_INFO           AcpiDmTableInfoRqscController[] =
+{
+    {ACPI_DMT_RQSC_CONTROLLER, ACPI_RQSCC_OFFSET (Type),            "Controller Type", 0},
+    {ACPI_DMT_UINT8,    ACPI_RQSCC_OFFSET (Reserved),               "Reserved", 0},
+    {ACPI_DMT_UINT16,   ACPI_RQSCC_OFFSET (Length),                 "Length", DT_LENGTH},
+    {ACPI_DMT_GAS,      ACPI_RQSCC_OFFSET (Address),                "Register Interface Address", 0},
+    {ACPI_DMT_UINT16,   ACPI_RQSCC_OFFSET (RcidCount),              "RCID Count", 0},
+    {ACPI_DMT_UINT16,   ACPI_RQSCC_OFFSET (McidCount),              "MCID Count", 0},
+    {ACPI_DMT_UINT16,   ACPI_RQSCC_OFFSET (Flags),                  "Flags (decoded below)", 0},
+    {ACPI_DMT_FLAG0,    ACPI_RQSCC_FLAG_OFFSET (Flags,0),           "Zero Blocks Allocation", 0},
+    {ACPI_DMT_UINT16,   ACPI_RQSCC_OFFSET (NumResources),           "Number of Resources", 0},
+    ACPI_DMT_TERMINATOR
+};
+
+/* Resource Structure */
+
+ACPI_DMTABLE_INFO           AcpiDmTableInfoRqscResource[] =
+{
+    {ACPI_DMT_RQSC_RESOURCE, ACPI_RQSCR_OFFSET (Type),              "Resource Type", 0},
+    {ACPI_DMT_UINT8,    ACPI_RQSCR_OFFSET (Reserved),               "Reserved", 0},
+    {ACPI_DMT_UINT16,   ACPI_RQSCR_OFFSET (Length),                 "Length", DT_LENGTH},
+    {ACPI_DMT_UINT16,   ACPI_RQSCR_OFFSET (Flags),                  "Flags", 0},
+    {ACPI_DMT_UINT8,    ACPI_RQSCR_OFFSET (Reserved2),              "Reserved", 0},
+    {ACPI_DMT_RQSC_ID,  ACPI_RQSCR_OFFSET (IdType),                 "Resource ID Type", 0},
+    {ACPI_DMT_UINT64,   ACPI_RQSCR_OFFSET (Id1),                    "Resource ID 1", 0},
+    {ACPI_DMT_UINT32,   ACPI_RQSCR_OFFSET (Id2),                    "Resource ID 2", 0},
+    ACPI_DMT_TERMINATOR
+};
+
+/* Resource Specific Data for the Memory Resource Type */
+
+ACPI_DMTABLE_INFO           AcpiDmTableInfoRqscMemory[] =
+{
+    {ACPI_DMT_UINT64,   ACPI_RQSCM_OFFSET (BandwidthPerBlock),      "Bandwidth per Block", DT_OPTIONAL},
+    ACPI_DMT_TERMINATOR
+};
+
+/* Resource Specific Data for all other Resource Types */
+
+ACPI_DMTABLE_INFO           AcpiDmTableInfoRqscData[] =
+{
+    {ACPI_DMT_RAW_BUFFER, 0,                                        "Resource Specific Data", DT_OPTIONAL},
+    ACPI_DMT_TERMINATOR
+};
+
+
+/*******************************************************************************
+ *
  * S3PT - S3 Performance Table
  *
  ******************************************************************************/

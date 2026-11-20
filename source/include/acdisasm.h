@@ -162,6 +162,9 @@ typedef enum
     ACPI_DMT_RGRT,
     ACPI_DMT_RHCT,
     ACPI_DMT_RIMT,
+    ACPI_DMT_RQSC_CONTROLLER,
+    ACPI_DMT_RQSC_ID,
+    ACPI_DMT_RQSC_RESOURCE,
     ACPI_DMT_SDEI,
     ACPI_DMT_SDEV,
     ACPI_DMT_SLIC,
@@ -575,6 +578,11 @@ extern ACPI_DMTABLE_INFO        AcpiDmTableInfoRimtPcieRc[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoRimtIdMapping[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoRimtPlatDev[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoRimtPlatDevPad[];
+extern ACPI_DMTABLE_INFO        AcpiDmTableInfoRqsc[];
+extern ACPI_DMTABLE_INFO        AcpiDmTableInfoRqscController[];
+extern ACPI_DMTABLE_INFO        AcpiDmTableInfoRqscResource[];
+extern ACPI_DMTABLE_INFO        AcpiDmTableInfoRqscMemory[];
+extern ACPI_DMTABLE_INFO        AcpiDmTableInfoRqscData[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoRsdp1[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoRsdp2[];
 extern ACPI_DMTABLE_INFO        AcpiDmTableInfoS3pt[];
@@ -878,6 +886,10 @@ AcpiDmDumpRhct (
 
 void
 AcpiDmDumpRimt (
+    ACPI_TABLE_HEADER       *Table);
+
+void
+AcpiDmDumpRqsc (
     ACPI_TABLE_HEADER       *Table);
 
 UINT32

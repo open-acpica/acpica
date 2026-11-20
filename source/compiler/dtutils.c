@@ -457,6 +457,9 @@ DtGetFieldLength (
     case ACPI_DMT_PMTT:
     case ACPI_DMT_PPTT:
     case ACPI_DMT_RGRT:
+    case ACPI_DMT_RQSC_CONTROLLER:
+    case ACPI_DMT_RQSC_ID:
+    case ACPI_DMT_RQSC_RESOURCE:
     case ACPI_DMT_SDEV:
     case ACPI_DMT_SRAT:
     case ACPI_DMT_AEST:
