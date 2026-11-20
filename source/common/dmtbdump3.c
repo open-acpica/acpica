@@ -619,10 +619,16 @@ AcpiDmDumpUbrt (
 {
     ACPI_STATUS             Status;
     UINT32                  Offset = sizeof (ACPI_TABLE_UBRT);
+    UINT32                  BodyOffset;
     ACPI_UBRT_SUBTABLE      *Subtable;
+    ACPI_UBRT_HEADER        *UbrtHeader;
     ACPI_TABLE_UBRT         *Ubrt;
     UINT32                  Count;
-    UINT32                  i;
+    UINT32                  TotalSize;
+    UINT32                  EntryOffset;
+    UINT32                  i, j;
+    UINT8                   Type;
+    UINT16                  EntryCount;
 
 
     /* Main table */
@@ -636,7 +642,7 @@ AcpiDmDumpUbrt (
     Ubrt = ACPI_CAST_PTR (ACPI_TABLE_UBRT, Table);
     Count = Ubrt->Count;
 
-    /* Subtables */
+    /* Sub-table entry array (16 bytes each, inline after Count) */
 
     Subtable = ACPI_ADD_PTR (ACPI_UBRT_SUBTABLE, Table, Offset);
 
@@ -644,7 +650,7 @@ AcpiDmDumpUbrt (
     {
         if (Offset + sizeof (ACPI_UBRT_SUBTABLE) > Table->Length)
         {
-            AcpiOsPrintf ("\n*** Warning: UBRT sub-table %u exceeds table length\n", i);
+            AcpiOsPrintf ("\n**** UBRT sub-table %u exceeds table length\n", i);
             return;
         }
 
@@ -662,6 +668,182 @@ AcpiDmDumpUbrt (
         Offset += sizeof (ACPI_UBRT_SUBTABLE);
         Subtable = ACPI_ADD_PTR (ACPI_UBRT_SUBTABLE, Subtable,
             sizeof (ACPI_UBRT_SUBTABLE));
+    }
+
+    /* Sub-table bodies (inline after the entry array) */
+
+    BodyOffset = Offset;
+
+    for (i = 0; i < Count; i++)
+    {
+        if (BodyOffset + sizeof (ACPI_UBRT_HEADER) > Table->Length)
+        {
+            /* No further inline body data present.*/
+            AcpiOsPrintf (
+                "\n**** UBRT sub-table %u with no body data\n", i);
+            break;
+        }
+
+        /* Read type from the corresponding entry */
+
+        Type = ACPI_ADD_PTR (ACPI_UBRT_SUBTABLE, Table,
+            sizeof (ACPI_TABLE_UBRT) +
+            (i * sizeof (ACPI_UBRT_SUBTABLE)))->Type;
+
+        UbrtHeader = ACPI_ADD_PTR (ACPI_UBRT_HEADER, Table, BodyOffset);
+        TotalSize = UbrtHeader->TotalSize;
+
+        if ((TotalSize < sizeof (ACPI_UBRT_HEADER)) ||
+            (BodyOffset + TotalSize) > Table->Length)
+        {
+            AcpiOsPrintf (
+                "\n**** UBRT body %u has invalid TotalSize 0x%X\n",
+                i, TotalSize);
+            break;
+        }
+
+        AcpiOsPrintf ("\n");
+
+        /* Common sub-table header (at the start of every sub-table body) */
+
+        Status = AcpiDmDumpTable (Table->Length, BodyOffset, UbrtHeader,
+            sizeof (ACPI_UBRT_HEADER), AcpiDmTableInfoUbrtHeader);
+        if (ACPI_FAILURE (Status))
+        {
+            return;
+        }
+
+        /* Type-specific fields follow the common header */
+
+        switch (Type)
+        {
+        case ACPI_UBRT_TYPE_UBC:
+
+            Status = AcpiDmDumpTable (Table->Length, BodyOffset, UbrtHeader,
+                TotalSize, AcpiDmTableInfoUbrtUbc);
+            if (ACPI_FAILURE (Status))
+            {
+                return;
+            }
+
+            /* UBC Structure entries (one per UbcCount) */
+
+            EntryCount = ACPI_CAST_PTR (ACPI_UBRT_UBC, UbrtHeader)->UbcCount;
+            EntryOffset = BodyOffset + sizeof (ACPI_UBRT_UBC);
+
+            for (j = 0; j < EntryCount; j++)
+            {
+                if (EntryOffset + sizeof (ACPI_UBRT_UBC_ENTRY) >
+                    BodyOffset + TotalSize)
+                {
+                    AcpiOsPrintf (
+                        "\n**** UBC entry %u exceeds body size\n", j);
+                    break;
+                }
+
+                AcpiOsPrintf ("\n");
+                Status = AcpiDmDumpTable (Table->Length, EntryOffset,
+                    ACPI_ADD_PTR (ACPI_UBRT_UBC_ENTRY, Table, EntryOffset),
+                    sizeof (ACPI_UBRT_UBC_ENTRY) -
+                    ACPI_OFFSET (ACPI_UBRT_UBC_ENTRY, VendorInfo[0]),
+                    AcpiDmTableInfoUbrtUbcEntry);
+                if (ACPI_FAILURE (Status))
+                {
+                    return;
+                }
+
+                EntryOffset += sizeof (ACPI_UBRT_UBC_ENTRY);
+            }
+            break;
+
+        case ACPI_UBRT_TYPE_UMMU:
+
+            Status = AcpiDmDumpTable (Table->Length, BodyOffset, UbrtHeader,
+                TotalSize, AcpiDmTableInfoUbrtUmmu);
+            if (ACPI_FAILURE (Status))
+            {
+                return;
+            }
+
+            /* UMMU Structure entries (one per UmmuCount) */
+
+            EntryCount = ACPI_CAST_PTR (ACPI_UBRT_UMMU, UbrtHeader)->UmmuCount;
+            EntryOffset = BodyOffset + sizeof (ACPI_UBRT_UMMU);
+
+            for (j = 0; j < EntryCount; j++)
+            {
+                if (EntryOffset + sizeof (ACPI_UBRT_UMMU_ENTRY) >
+                    BodyOffset + TotalSize)
+                {
+                    AcpiOsPrintf (
+                        "\n**** UMMU entry %u exceeds body size\n", j);
+                    break;
+                }
+
+                AcpiOsPrintf ("\n");
+                Status = AcpiDmDumpTable (Table->Length, EntryOffset,
+                    ACPI_ADD_PTR (ACPI_UBRT_UMMU_ENTRY, Table, EntryOffset),
+                    sizeof (ACPI_UBRT_UMMU_ENTRY) -
+                    ACPI_OFFSET (ACPI_UBRT_UMMU_ENTRY, VendorInfo[0]),
+                    AcpiDmTableInfoUbrtUmmuEntry);
+                if (ACPI_FAILURE (Status))
+                {
+                    return;
+                }
+
+                EntryOffset += sizeof (ACPI_UBRT_UMMU_ENTRY);
+            }
+            break;
+
+        case ACPI_UBRT_TYPE_RESERVED_MEM:
+
+            Status = AcpiDmDumpTable (Table->Length, BodyOffset, UbrtHeader,
+                TotalSize, AcpiDmTableInfoUbrtReservedMem);
+            if (ACPI_FAILURE (Status))
+            {
+                return;
+            }
+
+            /* Memory Range entries (one per MemoryRangesCount) */
+
+            EntryCount = ACPI_CAST_PTR (
+                ACPI_UBRT_RESERVED_MEM, UbrtHeader)->MemoryRangesCount;
+            EntryOffset = BodyOffset + sizeof (ACPI_UBRT_RESERVED_MEM);
+
+            for (j = 0; j < EntryCount; j++)
+            {
+                if (EntryOffset + sizeof (ACPI_UBRT_MEM_RANGE) >
+                    BodyOffset + TotalSize)
+                {
+                    AcpiOsPrintf (
+                        "\n**** Memory range %u exceeds body size\n", j);
+                    break;
+                }
+
+                AcpiOsPrintf ("\n");
+                Status = AcpiDmDumpTable (Table->Length, EntryOffset,
+                    ACPI_ADD_PTR (ACPI_UBRT_MEM_RANGE, Table, EntryOffset),
+                    sizeof (ACPI_UBRT_MEM_RANGE), AcpiDmTableInfoUbrtMemRange);
+                if (ACPI_FAILURE (Status))
+                {
+                    return;
+                }
+
+                EntryOffset += sizeof (ACPI_UBRT_MEM_RANGE);
+            }
+            break;
+
+        default:
+
+            /* The common header is dumped above; nothing further */
+
+            AcpiOsPrintf (
+                "\n**** Unknown UBRT subtable type 0x%X (body %u)\n",
+                Type, i);
+            break;
+        }
+
+        BodyOffset += TotalSize;
     }
 }
 

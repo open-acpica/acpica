@@ -3119,6 +3119,173 @@ DtGetGenericTableInfo (
 
 /******************************************************************************
  *
+ * FUNCTION:    DtCompileUbrtPadEntry
+ *
+ * PARAMETERS:  EntrySubtable       - Compiled sub-table entry (UBC/UMMU)
+ *              FixedSize           - Fixed entry size per the spec
+ *
+ * RETURN:      Status
+ *
+ * DESCRIPTION: The spec requires fixed-size entries (the trailing Vendor
+ *              Info buffer is compiled from a variable number of bytes).
+ *              Pad a short entry with zeros and reject an oversized one.
+ *
+ *****************************************************************************/
+
+static ACPI_STATUS
+DtCompileUbrtPadEntry (
+    DT_SUBTABLE             *EntrySubtable,
+    UINT32                  FixedSize)
+{
+    DT_SUBTABLE             *PadSubtable;
+    UINT8                   *PadBuffer;
+    UINT32                  PadLength;
+
+
+    if (EntrySubtable->Length > FixedSize)
+    {
+        sprintf (AslGbl_MsgBuffer,
+            " - UBRT entry is %u bytes, exceeds fixed size %u "
+            "(Vendor Info too long)", EntrySubtable->Length, FixedSize);
+        DtFatal (ASL_MSG_INVALID_LENGTH_FIXED, NULL, AslGbl_MsgBuffer);
+        return (AE_BAD_DATA);
+    }
+
+    if (EntrySubtable->Length < FixedSize)
+    {
+        PadLength = FixedSize - EntrySubtable->Length;
+        PadBuffer = ACPI_CAST_PTR (UINT8, UtLocalCacheCalloc (PadLength));
+        DtCreateSubtable (PadBuffer, PadLength, &PadSubtable);
+        DtInsertSubtable (DtPeekSubtable (), PadSubtable);
+    }
+
+    return (AE_OK);
+}
+
+
+/******************************************************************************
+ *
+ * FUNCTION:    DtCompileUbrtSetTotalSize
+ *
+ * PARAMETERS:  BodySubtable       - Compiled sub-table body (with entries)
+ *
+ * RETURN:      None
+ *
+ * DESCRIPTION: Back-fill the sub-table Total Size: the body length plus
+ *              all entry children.
+ *
+ *****************************************************************************/
+
+static void
+DtCompileUbrtSetTotalSize (
+    DT_SUBTABLE             *BodySubtable)
+{
+    ACPI_UBRT_HEADER        *BodyHeader;
+    DT_SUBTABLE             *ChildTable;
+    UINT32                  TotalSize;
+
+
+    /* Total size = body length plus all entry children, in order */
+
+    TotalSize = BodySubtable->Length;
+    for (ChildTable = BodySubtable->Child;
+        ChildTable;
+        ChildTable = ChildTable->Peer)
+    {
+        TotalSize += ChildTable->TotalLength;
+    }
+
+    BodyHeader = ACPI_CAST_PTR (ACPI_UBRT_HEADER, BodySubtable->Buffer);
+    BodyHeader->TotalSize = TotalSize;
+}
+
+
+/******************************************************************************
+ *
+ * FUNCTION:    DtCompileUbrtChecksum
+ *
+ * PARAMETERS:  BodySubtable       - Compiled sub-table body (with entries)
+ *
+ * RETURN:      None
+ *
+ * DESCRIPTION: Back-fill the sub-table 32-bit checksum. Per the spec, the
+ *              entire (valid) sub-table must sum to zero as little-endian
+ *              32-bit words; the final partial word (if any) is zero-
+ *              padded in its high bytes. Should be called after the Total
+ *              Size has been back-filled, since the sum covers it.
+ *
+ *****************************************************************************/
+
+static void
+DtCompileUbrtChecksum (
+    DT_SUBTABLE             *BodySubtable)
+{
+    ACPI_UBRT_HEADER        *BodyHeader;
+    DT_SUBTABLE             *ChildTable;
+    UINT32                  Remaining;
+    UINT32                  Sum = 0;
+    UINT32                  Word = 0;
+    UINT32                  Shift = 0;
+    UINT32                  i;
+    UINT8                   *Buffer;
+
+
+    BodyHeader = ACPI_CAST_PTR (ACPI_UBRT_HEADER, BodySubtable->Buffer);
+
+    /*
+     * Valid data is Total Size minus Remaining Size. Zero the checksum
+     * field before summing, then back-fill the inverse of the sum.
+     */
+
+    BodyHeader->Checksum = 0;
+    Remaining = BodyHeader->TotalSize - BodyHeader->RemainingSize;
+
+    /* Sum the body's own bytes, then the entry children, in order */
+
+    Buffer = BodySubtable->Buffer;
+    for (i = 0; (i < BodySubtable->Length) && Remaining; i++, Remaining--)
+    {
+        Word |= (UINT32) Buffer[i] << Shift;
+        Shift += 8;
+        if (Shift == 32)
+        {
+            Sum += Word;
+            Word = 0;
+            Shift = 0;
+        }
+    }
+
+    for (ChildTable = BodySubtable->Child;
+        ChildTable && Remaining;
+        ChildTable = ChildTable->Peer)
+    {
+        Buffer = ChildTable->Buffer;
+        for (i = 0; (i < ChildTable->Length) && Remaining; i++, Remaining--)
+        {
+            Word |= (UINT32) Buffer[i] << Shift;
+            Shift += 8;
+            if (Shift == 32)
+            {
+                Sum += Word;
+                Word = 0;
+                Shift = 0;
+            }
+        }
+    }
+
+    /* Final partial word: high bytes are zero-padded */
+
+    if (Shift)
+    {
+        Sum += Word;
+    }
+
+    BodyHeader->Checksum = (UINT32) (0 - Sum);
+}
+
+
+/******************************************************************************
+ *
  * FUNCTION:    DtCompileUbrt
  *
  * PARAMETERS:  List                - Current field list pointer
@@ -3135,10 +3302,19 @@ DtCompileUbrt (
 {
     ACPI_STATUS             Status;
     DT_SUBTABLE             *Subtable;
+    DT_SUBTABLE             *BodySubtable;
+    DT_SUBTABLE             *FieldsSubtable;
+    DT_SUBTABLE             *ChildTable;
     DT_SUBTABLE             *ParentTable;
     DT_FIELD                **PFieldList = (DT_FIELD **) List;
+    DT_FIELD                *SubtableStart;
     ACPI_TABLE_UBRT         *Ubrt;
     UINT32                  SubtableCount = 0;
+    UINT32                  EntryCount;
+    UINT16                  *CountPtr;
+    UINT8                   *EntryTypes;
+    UINT32                  i;
+    UINT8                   Type;
 
 
     /* Compile main table */
@@ -3160,14 +3336,21 @@ DtCompileUbrt (
     Ubrt = ACPI_SUB_PTR (ACPI_TABLE_UBRT, Subtable->Buffer,
         sizeof (ACPI_TABLE_HEADER));
 
-    /* Compile sub-tables */
-
+    /*
+     * Phase 1: compile the sub-table entry array (16 bytes each).
+     * The first field is DT_OPTIONAL so the loop stops as soon as the
+     * following sub-table body fields ("Table Name") are encountered.
+     */
     while (*PFieldList)
     {
         Status = DtCompileTable (PFieldList, AcpiDmTableInfoUbrtSubtable, &Subtable);
         if (ACPI_FAILURE (Status))
         {
             return (Status);
+        }
+        if (!Subtable)
+        {
+            break;
         }
 
         ParentTable = DtPeekSubtable ();
@@ -3178,7 +3361,227 @@ DtCompileUbrt (
     /* Update Count field in the main table */
 
     Ubrt->Count = SubtableCount;
+
+    if (SubtableCount == 0)
+    {
+        return (AE_OK);
+    }
+
+    /* Save entry Types to dispatch the bodies below */
+
+    EntryTypes = AcpiOsAllocate (SubtableCount);
+    if (!EntryTypes)
+    {
+        return (AE_NO_MEMORY);
+    }
+
+    /* Each entry is compiled into its own subtable; walk the entry
+     * subtables (following the Count subtable in the root's child list)
+     * and read each Type from its own buffer.
+     */
+
+    ChildTable = ParentTable->Child;
+    for (i = 0; i < SubtableCount; i++)
+    {
+        ChildTable = ChildTable->Peer;
+        EntryTypes[i] = ACPI_CAST_PTR (
+            ACPI_UBRT_SUBTABLE, ChildTable->Buffer)->Type;
+    }
+
+    /*
+     * Phase 2: compile the sub-table bodies (inline after the entry array).
+     * One body per entry: the common sub-table header, followed by the
+     * type-specific fields and entries, dispatched by the entry Type.
+     */
+    for (i = 0; i < SubtableCount; i++)
+    {
+        if (!*PFieldList)
+        {
+            break;
+        }
+
+        SubtableStart = *PFieldList;
+        Type = EntryTypes[i];
+
+        /* Common sub-table header */
+
+        Status = DtCompileTable (PFieldList, AcpiDmTableInfoUbrtHeader,
+            &BodySubtable);
+        if (ACPI_FAILURE (Status))
+        {
+            goto Error;
+        }
+
+        ParentTable = DtPeekSubtable ();
+        DtInsertSubtable (ParentTable, BodySubtable);
+        DtPushSubtable (BodySubtable);
+
+        switch (Type)
+        {
+        case ACPI_UBRT_TYPE_UBC:
+
+            /* UBC body (type-specific fields) */
+
+            Status = DtCompileTable (PFieldList, AcpiDmTableInfoUbrtUbc,
+                &FieldsSubtable);
+            if (ACPI_FAILURE (Status))
+            {
+                goto Error;
+            }
+
+            DtInsertSubtable (BodySubtable, FieldsSubtable);
+
+            /* UBC Structure entries */
+
+            EntryCount = 0;
+            while (*PFieldList)
+            {
+                Status = DtCompileTable (PFieldList,
+                    AcpiDmTableInfoUbrtUbcEntry, &Subtable);
+                if (ACPI_FAILURE (Status))
+                {
+                    goto Error;
+                }
+                if (!Subtable)
+                {
+                    break;
+                }
+
+                DtInsertSubtable (BodySubtable, Subtable);
+
+                /* Entries have a fixed size, pad short Vendor Info */
+
+                Status = DtCompileUbrtPadEntry (Subtable,
+                    sizeof (ACPI_UBRT_UBC_ENTRY));
+                if (ACPI_FAILURE (Status))
+                {
+                    goto Error;
+                }
+
+                EntryCount++;
+            }
+
+            /* Back-fill the count. The body subtable buffer holds only
+             * the fields past the common sub-table header, so locate
+             * the count field by its offset within the sub-table.
+             */
+
+            CountPtr = ACPI_CAST_PTR (UINT16, FieldsSubtable->Buffer +
+                (ACPI_OFFSET (ACPI_UBRT_UBC, UbcCount) -
+                sizeof (ACPI_UBRT_HEADER)));
+            *CountPtr = (UINT16) EntryCount;
+            break;
+
+        case ACPI_UBRT_TYPE_UMMU:
+
+            /* UMMU body (type-specific fields) */
+
+            Status = DtCompileTable (PFieldList, AcpiDmTableInfoUbrtUmmu,
+                &FieldsSubtable);
+            if (ACPI_FAILURE (Status))
+            {
+                goto Error;
+            }
+
+            DtInsertSubtable (BodySubtable, FieldsSubtable);
+
+            /* UMMU Structure entries */
+
+            EntryCount = 0;
+            while (*PFieldList)
+            {
+                Status = DtCompileTable (PFieldList,
+                    AcpiDmTableInfoUbrtUmmuEntry, &Subtable);
+                if (ACPI_FAILURE (Status))
+                {
+                    goto Error;
+                }
+                if (!Subtable)
+                {
+                    break;
+                }
+
+                DtInsertSubtable (BodySubtable, Subtable);
+
+                /* Entries have a fixed size, pad short Vendor Info */
+
+                Status = DtCompileUbrtPadEntry (Subtable,
+                    sizeof (ACPI_UBRT_UMMU_ENTRY));
+                if (ACPI_FAILURE (Status))
+                {
+                    goto Error;
+                }
+
+                EntryCount++;
+            }
+
+            CountPtr = ACPI_CAST_PTR (UINT16, FieldsSubtable->Buffer +
+                (ACPI_OFFSET (ACPI_UBRT_UMMU, UmmuCount) -
+                sizeof (ACPI_UBRT_HEADER)));
+            *CountPtr = (UINT16) EntryCount;
+            break;
+
+        case ACPI_UBRT_TYPE_RESERVED_MEM:
+
+            /* Reserved memory body (type-specific fields) */
+
+            Status = DtCompileTable (PFieldList,
+                AcpiDmTableInfoUbrtReservedMem, &FieldsSubtable);
+            if (ACPI_FAILURE (Status))
+            {
+                goto Error;
+            }
+
+            DtInsertSubtable (BodySubtable, FieldsSubtable);
+
+            /* Memory Range entries */
+
+            EntryCount = 0;
+            while (*PFieldList)
+            {
+                Status = DtCompileTable (PFieldList,
+                    AcpiDmTableInfoUbrtMemRange, &Subtable);
+                if (ACPI_FAILURE (Status))
+                {
+                    goto Error;
+                }
+                if (!Subtable)
+                {
+                    break;
+                }
+
+                DtInsertSubtable (BodySubtable, Subtable);
+                EntryCount++;
+            }
+
+            CountPtr = ACPI_CAST_PTR (UINT16, FieldsSubtable->Buffer +
+                (ACPI_OFFSET (ACPI_UBRT_RESERVED_MEM, MemoryRangesCount) -
+                sizeof (ACPI_UBRT_HEADER)));
+            *CountPtr = (UINT16) EntryCount;
+            break;
+
+        default:
+
+            sprintf (AslGbl_MsgBuffer, "UBRT (type 0x%X)", Type);
+            DtFatal (ASL_MSG_UNKNOWN_SUBTABLE, SubtableStart, AslGbl_MsgBuffer);
+            Status = AE_ERROR;
+            goto Error;
+        }
+
+        DtPopSubtable ();
+
+        /* Back-fill the Total Size, then the 32-bit checksum */
+
+        DtCompileUbrtSetTotalSize (BodySubtable);
+        DtCompileUbrtChecksum (BodySubtable);
+    }
+
+    AcpiOsFree (EntryTypes);
     return (AE_OK);
+
+Error:
+    AcpiOsFree (EntryTypes);
+    return (Status);
 }
 
 
