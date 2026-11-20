@@ -513,6 +513,13 @@ AcpiDbDisplayStatistics (
         AcpiOsPrintf ("Lowest Stack Pointer         %p\n", AcpiGbl_LowestStackPointer);
         AcpiOsPrintf ("Stack Use                    %X (%u)\n", Temp, Temp);
         AcpiOsPrintf ("Deepest Procedure Nesting    %u\n", AcpiGbl_DeepestNesting);
+
+        if (!(AcpiDbgLevel & ACPI_LV_FUNCTIONS))
+        {
+            AcpiOsPrintf (
+                "Note: these values are collected only while function "
+                "tracing (ACPI_LV_FUNCTIONS) is enabled\n");
+        }
 #endif
         break;
 
