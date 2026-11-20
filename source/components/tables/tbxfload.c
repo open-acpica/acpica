@@ -134,10 +134,16 @@ AcpiTbLoadNamespace (
      * Load the namespace. The DSDT is required, but any SSDT and
      * PSDT tables are optional. Verify the DSDT.
      */
+    if ((AcpiGbl_DsdtIndex == ACPI_INVALID_TABLE_INDEX) ||
+        (AcpiGbl_DsdtIndex >= AcpiGbl_RootTableList.CurrentTableCount))
+    {
+        Status = AE_NO_ACPI_TABLES;
+        goto UnlockAndExit;
+    }
+
     Table = &AcpiGbl_RootTableList.Tables[AcpiGbl_DsdtIndex];
 
-    if (!AcpiGbl_RootTableList.CurrentTableCount ||
-        !ACPI_COMPARE_NAMESEG (Table->Signature.Ascii, ACPI_SIG_DSDT) ||
+    if (!ACPI_COMPARE_NAMESEG (Table->Signature.Ascii, ACPI_SIG_DSDT) ||
          ACPI_FAILURE (AcpiTbValidateTable (Table)))
     {
         Status = AE_NO_ACPI_TABLES;
@@ -151,6 +157,7 @@ AcpiTbLoadNamespace (
      * .Pointer field is not validated until after call to AcpiTbValidateTable.
      */
     AcpiGbl_DSDT = Table->Pointer;
+    AcpiUtSetIntegerWidth (AcpiGbl_DSDT->Revision);
 
     /*
      * Optionally copy the entire DSDT to local memory (instead of simply

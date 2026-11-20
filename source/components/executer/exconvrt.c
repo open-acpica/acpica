@@ -448,6 +448,12 @@ AcpiExConvertToString (
 
     case ACPI_TYPE_INTEGER:
 
+        if ((AcpiGbl_IntegerByteWidth != 4) &&
+            (AcpiGbl_IntegerByteWidth != 8))
+        {
+            return_ACPI_STATUS (AE_AML_INTERNAL);
+        }
+
         switch (Type)
         {
         case ACPI_EXPLICIT_CONVERT_DECIMAL:
