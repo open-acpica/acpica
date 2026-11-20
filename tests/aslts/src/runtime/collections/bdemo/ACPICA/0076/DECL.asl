@@ -29,6 +29,22 @@
      * Bug 0076:
      *
      * SUMMARY: Unexpected dereference of Index reference in Store operator
+     *
+     * Store (Index (...), LocalX) must leave the Index reference in LocalX,
+     * not a copy of the referenced element. Per the ACPI specification
+     * ("LocalX Objects"), reading LocalX that holds an ObjectReference
+     * returns the reference and only DerefOf returns the target, so:
+     *
+     *  - DerefOf (LocalX) must succeed and yield the element; it would raise
+     *    AE_TYPE if LocalX held a plain value instead of the reference,
+     *  - after the package element is modified, DerefOf (LocalX) must yield
+     *    the new value, which proves that LocalX refers to the element
+     *    itself and not to a copy.
+     *
+     * Formerly the check expected AE_AML_OPERAND_TYPE from Add (LocalX, 0).
+     * The interpreter now resolves an Index reference held in LocalX when
+     * it is used as an integer operand, so that exception no longer occurs
+     * and can no longer serve as a proof that the reference was preserved.
      */
     Method (ME29, 0, NotSerialized)
     {
@@ -37,8 +53,40 @@
         Store (PD01 [0x00], Local1)
         Debug = Local1
         CH03 (__METHOD__, 0x00, __LINE__, 0x00, 0x00)
-        Local7 = (Local1 + 0x00)
-        CH04 (__METHOD__, 0x00, 0x2F, 0x00, __LINE__, 0x00, 0x00) /* AE_AML_OPERAND_TYPE */
+        /* Both Locals must hold a reference: DerefOf fails on a plain value */
+
+        Local2 = DerefOf (Local0)
+        Local3 = DerefOf (Local1)
+        CH03 (__METHOD__, 0x00, __LINE__, 0x00, 0x00)
+        If ((Local2 != 0x89ABCDEF))
+        {
+            ERR (__METHOD__, ZFFF, __LINE__, 0x00, 0x00, Local2, 0x89ABCDEF)
+        }
+
+        If ((Local3 != 0x89ABCDEF))
+        {
+            ERR (__METHOD__, ZFFF, __LINE__, 0x00, 0x00, Local3, 0x89ABCDEF)
+        }
+
+        /* The references must point at the element itself, not at a copy */
+
+        PD01 [0x00] = 0x12345678
+        Local2 = DerefOf (Local0)
+        Local3 = DerefOf (Local1)
+        CH03 (__METHOD__, 0x00, __LINE__, 0x00, 0x00)
+        If ((Local2 != 0x12345678))
+        {
+            ERR (__METHOD__, ZFFF, __LINE__, 0x00, 0x00, Local2, 0x12345678)
+        }
+
+        If ((Local3 != 0x12345678))
+        {
+            ERR (__METHOD__, ZFFF, __LINE__, 0x00, 0x00, Local3, 0x12345678)
+        }
+
+        /* Restore the shared data object */
+
+        PD01 [0x00] = 0x89ABCDEF
         Local2 = RefOf (ID0A)
         Debug = Local2
     }

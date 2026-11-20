@@ -29,6 +29,22 @@
      * Bug 113:
      *
      * SUMMARY: Unexpected dereference of Index reference immediately passed to Method
+     *
+     * An Index reference passed as a Method argument must arrive in the
+     * callee as a reference, not as a copy of the referenced element.
+     *
+     * Inside the callee the ACPI specification ("ArgX Objects", read access)
+     * requires an automatic dereference: reading ArgX that holds an
+     * ObjectReference returns the target of the reference, and DerefOf
+     * returns the same. Therefore:
+     *
+     *  - Add (ArgX, 1) must succeed and yield (element + 1),
+     *  - DerefOf (ArgX) must succeed and yield the element; it would raise
+     *    AE_TYPE if ArgX held a dereferenced copy instead of the reference.
+     *
+     * Formerly the check expected AE_AML_OPERAND_TYPE from Add (ArgX, 1),
+     * which contradicted the specification and only reflected the then
+     * current ACPICA behavior.
      */
     Method (ME79, 6, NotSerialized)
     {
@@ -41,27 +57,92 @@
         Debug = "Test 0"
         CH03 (__METHOD__, 0x00, __LINE__, 0x00, 0x00)
         Store ((Arg0 + 0x01), Local5)
-        CH04 (__METHOD__, 0x01, 0x2F, 0x00, __LINE__, 0x00, 0x00) /* AE_AML_OPERAND_TYPE */
+        Local6 = DerefOf (Arg0)
+        CH03 (__METHOD__, 0x00, __LINE__, 0x00, 0x00)
+        If ((Local5 != 0x01))
+        {
+            ERR (__METHOD__, ZFFF, __LINE__, 0x00, 0x00, Local5, 0x01)
+        }
+
+        If ((Local6 != 0x00))
+        {
+            ERR (__METHOD__, ZFFF, __LINE__, 0x00, 0x00, Local6, 0x00)
+        }
+
         Debug = "Test 1"
         CH03 (__METHOD__, 0x00, __LINE__, 0x00, 0x00)
         Store ((Arg1 + 0x01), Local5)
-        CH04 (__METHOD__, 0x01, 0x2F, 0x00, __LINE__, 0x00, 0x00) /* AE_AML_OPERAND_TYPE */
+        Local6 = DerefOf (Arg1)
+        CH03 (__METHOD__, 0x00, __LINE__, 0x00, 0x00)
+        If ((Local5 != 0x12))
+        {
+            ERR (__METHOD__, ZFFF, __LINE__, 0x00, 0x00, Local5, 0x12)
+        }
+
+        If ((Local6 != 0x11))
+        {
+            ERR (__METHOD__, ZFFF, __LINE__, 0x00, 0x00, Local6, 0x11)
+        }
+
         Debug = "Test 2"
         CH03 (__METHOD__, 0x00, __LINE__, 0x00, 0x00)
         Store ((Arg2 + 0x01), Local5)
-        CH04 (__METHOD__, 0x01, 0x2F, 0x00, __LINE__, 0x00, 0x00) /* AE_AML_OPERAND_TYPE */
+        Local6 = DerefOf (Arg2)
+        CH03 (__METHOD__, 0x00, __LINE__, 0x00, 0x00)
+        If ((Local5 != 0x23))
+        {
+            ERR (__METHOD__, ZFFF, __LINE__, 0x00, 0x00, Local5, 0x23)
+        }
+
+        If ((Local6 != 0x22))
+        {
+            ERR (__METHOD__, ZFFF, __LINE__, 0x00, 0x00, Local6, 0x22)
+        }
+
         Debug = "Test 3"
         CH03 (__METHOD__, 0x00, __LINE__, 0x00, 0x00)
         Store ((Arg3 + 0x01), Local5)
-        CH04 (__METHOD__, 0x01, 0x2F, 0x00, __LINE__, 0x00, 0x00) /* AE_AML_OPERAND_TYPE */
+        Local6 = DerefOf (Arg3)
+        CH03 (__METHOD__, 0x00, __LINE__, 0x00, 0x00)
+        If ((Local5 != 0x34))
+        {
+            ERR (__METHOD__, ZFFF, __LINE__, 0x00, 0x00, Local5, 0x34)
+        }
+
+        If ((Local6 != 0x33))
+        {
+            ERR (__METHOD__, ZFFF, __LINE__, 0x00, 0x00, Local6, 0x33)
+        }
+
         Debug = "Test 4"
         CH03 (__METHOD__, 0x00, __LINE__, 0x00, 0x00)
         Store ((Arg4 + 0x01), Local5)
-        CH04 (__METHOD__, 0x01, 0x2F, 0x00, __LINE__, 0x00, 0x00) /* AE_AML_OPERAND_TYPE */
+        Local6 = DerefOf (Arg4)
+        CH03 (__METHOD__, 0x00, __LINE__, 0x00, 0x00)
+        If ((Local5 != 0x45))
+        {
+            ERR (__METHOD__, ZFFF, __LINE__, 0x00, 0x00, Local5, 0x45)
+        }
+
+        If ((Local6 != 0x44))
+        {
+            ERR (__METHOD__, ZFFF, __LINE__, 0x00, 0x00, Local6, 0x44)
+        }
+
         Debug = "Test 5"
         CH03 (__METHOD__, 0x00, __LINE__, 0x00, 0x00)
         Store ((Arg5 + 0x01), Local5)
-        CH04 (__METHOD__, 0x01, 0x2F, 0x00, __LINE__, 0x00, 0x00) /* AE_AML_OPERAND_TYPE */
+        Local6 = DerefOf (Arg5)
+        CH03 (__METHOD__, 0x00, __LINE__, 0x00, 0x00)
+        If ((Local5 != 0x45))
+        {
+            ERR (__METHOD__, ZFFF, __LINE__, 0x00, 0x00, Local5, 0x45)
+        }
+
+        If ((Local6 != 0x44))
+        {
+            ERR (__METHOD__, ZFFF, __LINE__, 0x00, 0x00, Local6, 0x44)
+        }
     }
 
     Method (ME7A, 0, Serialized)
