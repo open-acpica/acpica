@@ -128,7 +128,7 @@ insert_dual_license_headers()
 	# Insert the dual license into *.c and *.h files
 	#
 	echo "Inserting dual-license into all source files"
-	$ACPISRC -h -y $TEMP_DIR
+	$ACPISRC -h -y $TEMP_DIR || exit 1
 }
 
 build_unix_package()

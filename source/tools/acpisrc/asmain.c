@@ -89,7 +89,7 @@ AsExaminePaths (
     Status = stat (Source, &Gbl_StatBuf);
     if (Status)
     {
-        printf ("Source path \"%s\" does not exist\n", Source);
+        fprintf (stderr, "Source path \"%s\" does not exist\n", Source);
         return (-1);
     }
 
@@ -259,6 +259,7 @@ main (
     char                    *SourcePath;
     char                    *TargetPath;
     UINT32                  FileType;
+    int                     Status = 0;
 
 
     ACPI_DEBUG_INITIALIZE (); /* For debug version only */
@@ -348,7 +349,7 @@ main (
 
         default:
 
-            printf ("Unknown option: -v%s\n", AcpiGbl_Optarg);
+            fprintf (stderr, "Unknown option: -v%s\n", AcpiGbl_Optarg);
             return (-1);
         }
 
@@ -390,7 +391,7 @@ main (
     SourcePath = argv[AcpiGbl_Optind];
     if (!SourcePath)
     {
-        printf ("Missing source path\n");
+        fprintf (stderr, "Missing source path\n");
         AsDisplayUsage ();
         return (-1);
     }
@@ -399,8 +400,8 @@ main (
 
     if (Gbl_CheckAscii)
     {
-        AsProcessOneFile (NULL, NULL, NULL, 0, SourcePath, FILE_TYPE_SOURCE);
-        return (0);
+        return (AsProcessOneFile (NULL, NULL, NULL, 0,
+            SourcePath, FILE_TYPE_SOURCE));
     }
 
     TargetPath = argv[AcpiGbl_Optind+1];
@@ -444,7 +445,7 @@ main (
     {
         /* Process the directory tree */
 
-        AsProcessTree (ConversionTable, SourcePath, TargetPath);
+        Status = AsProcessTree (ConversionTable, SourcePath, TargetPath);
     }
     else
     {
@@ -461,27 +462,28 @@ main (
 
         if (strstr (SourcePath, ".h"))
         {
-            AsProcessOneFile (ConversionTable, NULL, TargetPath, 0,
+            Status = AsProcessOneFile (ConversionTable, NULL, TargetPath, 0,
                 SourcePath, FILE_TYPE_HEADER);
         }
         else if (strstr (SourcePath, ".c"))
         {
-            AsProcessOneFile (ConversionTable, NULL, TargetPath, 0,
+            Status = AsProcessOneFile (ConversionTable, NULL, TargetPath, 0,
                 SourcePath, FILE_TYPE_SOURCE);
         }
         else if (strstr (SourcePath, ".patch"))
         {
-            AsProcessOneFile (ConversionTable, NULL, TargetPath, 0,
+            Status = AsProcessOneFile (ConversionTable, NULL, TargetPath, 0,
                 SourcePath, FILE_TYPE_PATCH);
         }
         else
         {
-            printf ("Unknown file type - %s\n", SourcePath);
+            fprintf (stderr, "Unknown file type - %s\n", SourcePath);
+            Status = -1;
         }
     }
 
     /* Always display final summary and stats */
 
     AsDisplayStats ();
-    return (0);
+    return (Status);
 }
