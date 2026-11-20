@@ -117,6 +117,7 @@ const AH_TABLE      AcpiGbl_SupportedTables[] =
     {ACPI_SIG_RAS2, "RAS2 Features Table"},
     {ACPI_SIG_RHCT, "RISC-V Hart Capabilities Table"},
     {ACPI_SIG_RGRT, "Regulatory Graphics Resource Table"},
+    {ACPI_SIG_RQSC, "RISC-V Quality of Service Controllers Table"},
     {ACPI_RSDP_NAME,"Root System Description Pointer"},
     {ACPI_SIG_RSDT, "Root System Description Table"},
     {ACPI_SIG_S3PT, "S3 Performance Table"},

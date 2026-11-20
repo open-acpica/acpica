@@ -62,6 +62,7 @@
 #define ACPI_SIG_RGRT           "RGRT"      /* Regulatory Graphics Resource Table */
 #define ACPI_SIG_RHCT           "RHCT"      /* RISC-V Hart Capabilities Table */
 #define ACPI_SIG_RIMT           "RIMT"      /* RISC-V IO Mapping Table */
+#define ACPI_SIG_RQSC           "RQSC"      /* RISC-V Quality of Service Controllers Table */
 #define ACPI_SIG_SBST           "SBST"      /* Smart Battery Specification Table */
 #define ACPI_SIG_SDEI           "SDEI"      /* Software Delegated Exception Interface Table */
 #define ACPI_SIG_SDEV           "SDEV"      /* Secure Devices table */
@@ -4013,6 +4014,73 @@ typedef struct acpi_rimt_platform_device {
     UINT16              NumIdMappings;     /* Number of ID mappings */
     char                DeviceName[];      /* Device Object Name */
 } ACPI_RIMT_PLATFORM_DEVICE;
+
+
+/*******************************************************************************
+ *
+ * RQSC - RISC-V Quality of Service Controllers Table
+ *
+ * https://github.com/riscv-non-isa/riscv-rqsc
+ *
+ ******************************************************************************/
+
+typedef struct acpi_table_rqsc {
+    ACPI_TABLE_HEADER       Header;             /* Common ACPI table header */
+    UINT32                  NumControllers;     /* Number of Controller Structures */
+} ACPI_TABLE_RQSC;
+
+/* Controller Structure */
+
+typedef struct acpi_rqsc_controller {
+    UINT8                   Type;               /* Controller Type */
+    UINT8                   Reserved;
+    UINT16                  Length;             /* Includes the Resource Structures */
+    ACPI_GENERIC_ADDRESS    Address;            /* Register Interface Address */
+    UINT16                  RcidCount;          /* RCID Count */
+    UINT16                  McidCount;          /* MCID Count */
+    UINT16                  Flags;              /* Controller Flags */
+    UINT16                  NumResources;       /* Number of Resources */
+} ACPI_RQSC_CONTROLLER;
+
+enum acpi_rqsc_controller_type {
+    ACPI_RQSC_CONTROLLER_TYPE_CAPACITY  = 0x0,
+    ACPI_RQSC_CONTROLLER_TYPE_BANDWIDTH = 0x1,
+};
+
+/* Controller Flags */
+#define ACPI_RQSC_CONTROLLER_ZERO_BLOCKS    (1)     /* Zero blocks can be allocated to an RCID */
+
+/* Resource Structure */
+
+typedef struct acpi_rqsc_resource {
+    UINT8                   Type;               /* Resource Type */
+    UINT8                   Reserved;
+    UINT16                  Length;             /* Includes the Resource Specific Data */
+    UINT16                  Flags;              /* Resource Flags */
+    UINT8                   Reserved2;
+    UINT8                   IdType;             /* Resource ID Type */
+    UINT64                  Id1;                /* Resource ID 1 */
+    UINT32                  Id2;                /* Resource ID 2 */
+} ACPI_RQSC_RESOURCE;
+
+enum acpi_rqsc_resource_type {
+    ACPI_RQSC_RESOURCE_TYPE_CACHE   = 0x0,
+    ACPI_RQSC_RESOURCE_TYPE_MEMORY  = 0x1,
+};
+
+enum acpi_rqsc_resource_id_type {
+    ACPI_RQSC_RESOURCE_ID_TYPE_PROCESSOR_CACHE   = 0x0,
+    ACPI_RQSC_RESOURCE_ID_TYPE_MEMORY_RANGE      = 0x1,
+    ACPI_RQSC_RESOURCE_ID_TYPE_MEMORY_SIDE_CACHE = 0x2,
+    ACPI_RQSC_RESOURCE_ID_TYPE_ACPI_DEVICE       = 0x3,
+    ACPI_RQSC_RESOURCE_ID_TYPE_PCI_DEVICE        = 0x4,
+};
+
+/* Resource Specific Data for the Memory Resource Type */
+
+typedef struct acpi_rqsc_memory_data {
+    UINT64                  BandwidthPerBlock;  /* In bytes per second, 0 if not provided */
+} ACPI_RQSC_MEMORY_DATA;
 
 
 /*******************************************************************************
