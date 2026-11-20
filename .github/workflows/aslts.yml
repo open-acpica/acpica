@@ -1,0 +1,118 @@
+name: ASLTS regression
+
+# Runs the ASL test suite (tests/aslts, 64-bit modes only) on every push to
+# "testing" and compares the status of every test with
+# .github/aslts-regression/expected/<mode>.txt (one line per test:
+# "<collection>:<case>:<test><TAB><PASS|FAIL|BLOCKED|SKIPPED>", sorted bytewise).
+# The job is green only when every test ends with its expected status; a test
+# expected to FAIL that now passes is reported as a warning until expected/ is
+# updated. No third-party actions are used: results are published in the Step
+# Summary and in the job log only.
+#
+# Updating expected/ (always in its own commit, separate from code/test changes):
+# the Step Summary of a run contains a "How to update expected/" block with one
+# line per discrepancy; apply it to expected/<mode>.txt (MISSING: remove the
+# line, NEW: add it, otherwise set the actual status), keep the file sorted
+# (LC_ALL=C sort) and mention the run URL in the commit message.
+
+on:
+  push:
+    branches: [testing]
+    paths:
+      - 'source/**'
+      - 'generate/**'
+      - 'tests/**'
+      - 'Makefile'
+      - '.github/aslts-regression/**'
+      - '.github/workflows/aslts.yml'
+  workflow_dispatch:
+    inputs:
+      modes:
+        description: 'ASLTS modes to run (space separated)'
+        default: 'n64 o64'
+        required: false
+
+permissions:
+  contents: read
+
+env:
+  ASLTS_MODES: ${{ inputs.modes || 'n64 o64' }}
+
+jobs:
+  aslts:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout
+        run: |
+          set -euo pipefail
+          git init -q .
+          git remote add origin "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git"
+          git fetch -q --depth=1 origin "$GITHUB_SHA"
+          git checkout -q --detach FETCH_HEAD
+          git log -1 --oneline
+
+      - name: Install build tools
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends bison flex m4
+          gcc --version | head -n1
+          bison --version | head -n1
+          flex --version
+          python3 --version
+
+      - name: Record environment
+        run: |
+          set -euo pipefail
+          {
+            echo "commit: $GITHUB_SHA"
+            echo "kernel: $(uname -a)"
+            echo "nproc: $(nproc)"
+            echo "gcc: $(gcc --version | head -n1)"
+            echo "modes: $ASLTS_MODES"
+          } | tee "$RUNNER_TEMP/env.txt"
+
+      - name: Run ASLTS
+        id: run
+        # aslts.sh must be started from tests/ (its template test does "pushd templates"
+        # relative to the current directory). -e skips the disassembler/converter
+        # round-trip stages, which do not influence the test statuses. The exit code
+        # of aslts.sh does not reflect the test results, so it is only logged here.
+        run: |
+          # GitHub runs "bash -eo pipefail"; disable -e so the exit code is logged
+          # and the result is decided by the compare step.
+          set +e -o pipefail
+          cd tests
+          args=()
+          for m in $ASLTS_MODES; do args+=(-m "$m"); done
+          ./aslts.sh -e "${args[@]}" 2>&1 | tee "$RUNNER_TEMP/aslts.log"
+          echo "aslts.sh exit code: ${PIPESTATUS[0]}"
+
+      - name: Compare with expected results
+        id: compare
+        if: always() && steps.run.outcome != 'skipped'
+        run: |
+          set +e -uo pipefail
+          python3 -I .github/aslts-regression/compare.py \
+            --modes "$ASLTS_MODES" \
+            --check-complete \
+            --log "$RUNNER_TEMP/aslts.log" \
+            --env-file "$RUNNER_TEMP/env.txt" \
+            --out "$RUNNER_TEMP"
+          rc=$?
+          echo "compare exit code: $rc"
+          exit $rc
+
+      - name: Log excerpts
+        if: always()
+        run: |
+          echo "::group::aslts.sh log (last 200 lines)"
+          tail -n 200 "$RUNNER_TEMP/aslts.log" 2>/dev/null || echo "(no aslts.sh log)"
+          echo "::endgroup::"
+          echo "::group::environment"
+          cat "$RUNNER_TEMP/env.txt" 2>/dev/null || true
+          echo "::endgroup::"
