@@ -22,7 +22,6 @@
 /* PCI configuration space values */
 
 #define PCI_CFG_HEADER_TYPE_REG             0x0E
-#define PCI_CFG_PRIMARY_BUS_NUMBER_REG      0x18
 #define PCI_CFG_SECONDARY_BUS_NUMBER_REG    0x19
 
 /* PCI header values */
@@ -407,17 +406,13 @@ AcpiHwGetPciDeviceInfo (
         return (AE_OK);
     }
 
-    /* Bridge: Get the Primary BusNumber */
-
-    Status = AcpiOsReadPciConfiguration (PciId,
-        PCI_CFG_PRIMARY_BUS_NUMBER_REG, &PciValue, 8);
-    if (ACPI_FAILURE (Status))
-    {
-        return (Status);
-    }
-
+    /*
+     * Keep the bus derived from the parent bridge. The Primary Bus Number
+     * register may still contain its reset value when a region is first
+     * accessed during resume, before the PCI core restores bridge state.
+     * Replacing the derived bus would also misdirect the following read.
+     */
     *IsBridge = TRUE;
-    PciId->Bus = (UINT16) PciValue;
 
     /* Bridge: Get the Secondary BusNumber */
 
