@@ -870,12 +870,13 @@ AcpiDsEvaluateNamePath (
 
     if (Type == ACPI_TYPE_INTEGER)
     {
-        /* It was incremented by AcpiExResolveToValue */
+        Status = AcpiUtCopyIobjectToIobject (
+            *Operand, &NewObjDesc, WalkState);
+
+        /* Remove the reference added by AcpiExResolveToValue */
 
         AcpiUtRemoveReference (*Operand);
 
-        Status = AcpiUtCopyIobjectToIobject (
-            *Operand, &NewObjDesc, WalkState);
         if (ACPI_FAILURE (Status))
         {
             goto Exit;
