@@ -649,7 +649,8 @@ AcpiGetTagPathname (
     Aml = ACPI_CAST_PTR (
         AML_RESOURCE, &Op->Named.Data[ResourceNode->Value]);
 
-    Status = AcpiUtValidateResource (NULL, Aml, &ResourceTableIndex);
+    Status = AcpiUtValidateResource (
+        NULL, Aml, Op->Named.Length - ResourceNode->Value, &ResourceTableIndex);
     if (ACPI_FAILURE (Status))
     {
         return (NULL);

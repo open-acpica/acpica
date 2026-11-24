@@ -908,6 +908,7 @@ ACPI_STATUS
 AcpiUtValidateResource (
     ACPI_WALK_STATE         *WalkState,
     void                    *Aml,
+    ACPI_SIZE               AmlLength,
     UINT8                   *ReturnIndex);
 
 UINT32
