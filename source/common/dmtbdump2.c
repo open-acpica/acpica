@@ -2836,7 +2836,8 @@ AcpiDmDumpRhct (
     ACPI_RHCT_CMO_NODE      *RhctCmoNode;
     ACPI_RHCT_MMU_NODE      *RhctMmuNode;
     UINT32                  Length = Table->Length;
-    UINT8                   SubtableOffset, IsaPadOffset;
+    UINT8                   SubtableOffset;
+    UINT32                  IsaPadOffset;
     UINT32                  Offset = sizeof (ACPI_TABLE_RHCT);
     UINT32                  i;
 
@@ -2910,7 +2911,7 @@ AcpiDmDumpRhct (
 
         case ACPI_RHCT_NODE_TYPE_ISA_STRING:
             RhctIsaString = ACPI_ADD_PTR (ACPI_RHCT_ISA_STRING, Subtable, SubtableOffset);
-            IsaPadOffset = (UINT8) (SubtableOffset + 2 + RhctIsaString->IsaLength);
+            IsaPadOffset = SubtableOffset + 2 + RhctIsaString->IsaLength;
             Status = AcpiDmDumpTable (Table->Length, Offset + SubtableOffset,
                     RhctIsaString, RhctIsaString->IsaLength, AcpiDmTableInfoRhctIsa1);
             if (Subtable->Length > IsaPadOffset)
