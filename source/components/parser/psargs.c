@@ -71,12 +71,12 @@ AcpiPsGetNextPackageLength (
      */
 
     /* Check if we have at least one byte to read */
-    Remaining = (UINT32) ACPI_PTR_DIFF (ParserState->AmlEnd, Aml);
-    if (Remaining == 0)
+    if (ParserState->AmlEnd < Aml)
     {
         return_UINT32 (0);
     }
 
+    Remaining = (UINT32) ACPI_PTR_DIFF (ParserState->AmlEnd, Aml);
     ByteCount = (Aml[0] >> 6);
 
     /* Validate ByteCount and ensure we have enough bytes to read */
@@ -140,6 +140,20 @@ AcpiPsGetNextPackageEnd (
     /* Function below updates ParserState->Aml */
 
     PackageLength = AcpiPsGetNextPackageLength (ParserState);
+
+    /*
+     * Package length needs to be at least as long as the bytes that encode it,
+     * and can't be longer than the object length described by AmlEnd. Also if
+     * the Aml pointer didn't move something went wrong since
+     * AcpiPsGetNextPackageLength should have moved the pointer past the
+     * encoding bytes.
+     */
+    if ((ParserState->Aml == Start) ||
+        (PackageLength < ACPI_PTR_DIFF (ParserState->Aml, Start)) ||
+        (PackageLength > ACPI_PTR_DIFF (ParserState->AmlEnd, Start)))
+    {
+        return_PTR (NULL);
+    }
 
     return_PTR (Start + PackageLength); /* end of package */
 }
@@ -435,7 +449,7 @@ AcpiPsGetNextNamepath (
  *
  ******************************************************************************/
 
-void
+ACPI_STATUS
 AcpiPsGetNextSimpleArg (
     ACPI_PARSE_STATE        *ParserState,
     UINT32                  ArgType,
@@ -444,12 +458,15 @@ AcpiPsGetNextSimpleArg (
     UINT32                  Length;
     UINT16                  Opcode;
     UINT8                   *Aml = ParserState->Aml;
-    UINT32                  Remaining = (UINT32) ACPI_PTR_DIFF (ParserState->AmlEnd, Aml);
-    UINT64                  PartialValue;
+    UINT32                  Remaining = 0;
 
 
     ACPI_FUNCTION_TRACE_U32 (PsGetNextSimpleArg, ArgType);
 
+    if (Aml < ParserState->AmlEnd)
+    {
+        Remaining = (UINT32) ACPI_PTR_DIFF (ParserState->AmlEnd, Aml);
+    }
 
     switch (ArgType)
     {
@@ -458,16 +475,12 @@ AcpiPsGetNextSimpleArg (
         /* Get 1 byte from the AML stream */
 
         Opcode = AML_BYTE_OP;
-        if (Remaining >= 1)
+        Length = 1;
+        if (Remaining < 1)
         {
-            Arg->Common.Value.Integer = (UINT64) *Aml;
-            Length = 1;
+            goto MemoryError;
         }
-        else
-        {
-            Arg->Common.Value.Integer = 0;
-            Length = 0;
-        }
+        Arg->Common.Value.Integer = (UINT64) *Aml;
         break;
 
     case ARGP_WORDDATA:
@@ -475,23 +488,12 @@ AcpiPsGetNextSimpleArg (
         /* Get 2 bytes from the AML stream */
 
         Opcode = AML_WORD_OP;
-        if (Remaining >= 2)
+        Length = 2;
+        if (Remaining < 2)
         {
-            ACPI_MOVE_16_TO_64 (&Arg->Common.Value.Integer, Aml);
-            Length = 2;
+            goto MemoryError;
         }
-        else
-        {
-            Arg->Common.Value.Integer = 0;
-            Length = 0;
-            if (Remaining > 0)
-            {
-                PartialValue = 0;
-                memcpy (&PartialValue, Aml, Remaining);
-                Arg->Common.Value.Integer = PartialValue;
-                Length = Remaining;
-            }
-        }
+        ACPI_MOVE_16_TO_64 (&Arg->Common.Value.Integer, Aml);
         break;
 
     case ARGP_DWORDDATA:
@@ -499,23 +501,12 @@ AcpiPsGetNextSimpleArg (
         /* Get 4 bytes from the AML stream */
 
         Opcode = AML_DWORD_OP;
-        if (Remaining >= 4)
+        Length = 4;
+        if (Remaining < 4)
         {
-            ACPI_MOVE_32_TO_64 (&Arg->Common.Value.Integer, Aml);
-            Length = 4;
+            goto MemoryError;
         }
-        else
-        {
-            Arg->Common.Value.Integer = 0;
-            Length = 0;
-            if (Remaining > 0)
-            {
-                PartialValue = 0;
-                memcpy (&PartialValue, Aml, Remaining);
-                Arg->Common.Value.Integer = PartialValue;
-                Length = Remaining;
-            }
-        }
+        ACPI_MOVE_32_TO_64 (&Arg->Common.Value.Integer, Aml);
         break;
 
     case ARGP_QWORDDATA:
@@ -523,61 +514,32 @@ AcpiPsGetNextSimpleArg (
         /* Get 8 bytes from the AML stream */
 
         Opcode = AML_QWORD_OP;
-        if (Remaining >= 8)
+        Length = 8;
+        if (Remaining < 8)
         {
-            ACPI_MOVE_64_TO_64 (&Arg->Common.Value.Integer, Aml);
-            Length = 8;
+            goto MemoryError;
         }
-        else
-        {
-            Arg->Common.Value.Integer = 0;
-            Length = 0;
-            if (Remaining > 0)
-            {
-                PartialValue = 0;
-                memcpy (&PartialValue, Aml, Remaining);
-                Arg->Common.Value.Integer = PartialValue;
-                Length = Remaining;
-            }
-        }
+        ACPI_MOVE_64_TO_64 (&Arg->Common.Value.Integer, Aml);
         break;
 
     case ARGP_CHARLIST:
 
-        /* Get a pointer to the string, point past the string */
-
         Opcode = AML_STRING_OP;
-        Arg->Common.Value.String = ACPI_CAST_PTR (char, Aml);
 
-        /* Find the null terminator */
+        /* Check if there is enough space for the text and the null terminator */
 
         Length = 0;
         while ((Length < Remaining) && Aml[Length])
         {
             Length++;
         }
-        if (Length < Remaining)
+        if (Length >= Remaining)
         {
-            /* Account for the terminating null */
-            Length++;
+            goto MemoryError;
         }
-        else
-        {
-            /*
-             * No terminator found - add null at buffer boundary
-             * and report a warning
-             */
-            ACPI_WARNING ((AE_INFO,
-                "Invalid AML string: no null terminator, truncating at offset %u",
-                (UINT32) (Aml - ParserState->Aml)));
 
-            /* Add null terminator at the boundary */
-            if (Remaining > 0)
-            {
-                Aml[Remaining - 1] = 0;
-                Length = Remaining;
-            }
-        }
+        Arg->Common.Value.String = ACPI_CAST_PTR (char, Aml);
+        Length++;
         break;
 
     case ARGP_NAME:
@@ -585,17 +547,24 @@ AcpiPsGetNextSimpleArg (
 
         AcpiPsInitOp (Arg, AML_INT_NAMEPATH_OP);
         Arg->Common.Value.Name = AcpiPsGetNextNamestring (ParserState);
-        return_VOID;
+        return_ACPI_STATUS (AE_OK);
 
     default:
 
         ACPI_ERROR ((AE_INFO, "Invalid ArgType 0x%X", ArgType));
-        return_VOID;
+        return_ACPI_STATUS (AE_AML_OPERAND_TYPE);
     }
 
     AcpiPsInitOp (Arg, Opcode);
     ParserState->Aml += Length;
-    return_VOID;
+    return_ACPI_STATUS (AE_OK);
+
+MemoryError:
+    ACPI_ERROR ((AE_INFO,
+        "AML %s argument at offset 0x%X runs past end of AML",
+        (Opcode == AML_STRING_OP) ? "string" : "integer",
+        (UINT32) ACPI_PTR_DIFF (Aml, ParserState->AmlStart)));
+    return_ACPI_STATUS (AE_AML_PACKAGE_LIMIT);
 }
 
 
@@ -623,9 +592,9 @@ AcpiPsGetNextField (
     UINT8                   AccessType;
     UINT8                   AccessAttribute;
     UINT8                   AccessLength;
-    UINT32                  PkgLength;
     UINT8                   *PkgEnd;
     UINT32                  BufferLength;
+    UINT8                   OpSize;
 
 
     ACPI_FUNCTION_TRACE (PsGetNextField);
@@ -773,6 +742,12 @@ AcpiPsGetNextField (
 
     case AML_INT_CONNECTION_OP:
 
+        if (ParserState->Aml >= ParserState->AmlEnd)
+        {
+            AcpiPsFreeOp (Field);
+            return_PTR (NULL);
+        }
+
         /*
          * Argument for Connection operator can be either a Buffer
          * (resource descriptor), or a NameString.
@@ -783,17 +758,23 @@ AcpiPsGetNextField (
             ParserState->Aml++;
 
             ASL_CV_CAPTURE_COMMENTS_ONLY (ParserState);
-            PkgEnd = ParserState->Aml;
-            PkgLength = AcpiPsGetNextPackageLength (ParserState);
-            PkgEnd += PkgLength;
+            PkgEnd = AcpiPsGetNextPackageEnd (ParserState);
+            if (!PkgEnd)
+            {
+                AcpiPsFreeOp (Field);
+                return_PTR (NULL);
+            }
 
             ASL_CV_CAPTURE_COMMENTS_ONLY (ParserState);
             if (ParserState->Aml < PkgEnd)
             {
-                /* Non-empty list */
+                /*
+                 * Non-empty list - check allocation success and whether Aml
+                 * won't go past AmlEnd
+                 */
 
                 Arg = AcpiPsAllocOp (AML_INT_BYTELIST_OP, Aml);
-                if (!Arg)
+                if (ParserState->Aml >= ParserState->AmlEnd || !Arg)
                 {
                     AcpiPsFreeOp (Field);
                     return_PTR (NULL);
@@ -808,28 +789,47 @@ AcpiPsGetNextField (
                 switch (Opcode)
                 {
                 case AML_BYTE_OP:       /* AML_BYTEDATA_ARG */
-
-                    BufferLength = ACPI_GET8 (ParserState->Aml);
-                    ParserState->Aml += 1;
-                    break;
-
                 case AML_WORD_OP:       /* AML_WORDDATA_ARG */
-
-                    BufferLength = ACPI_GET16 (ParserState->Aml);
-                    ParserState->Aml += 2;
-                    break;
-
                 case AML_DWORD_OP:      /* AML_DWORDATA_ARG */
 
+                    OpSize = 1 << (Opcode - AML_BYTE_OP);
+                    break;
+
+                default:
+
+                    OpSize = 0;
+                }
+
+                /* Check if we can safely read OpSize byte of data */
+                if ((ParserState->Aml + OpSize) > ParserState->AmlEnd || !Arg)
+                {
+                    AcpiPsFreeOp (Field);
+                    return_PTR (NULL);
+                }
+
+                switch (OpSize)
+                {
+                case 1:
+
+                    BufferLength = ACPI_GET8 (ParserState->Aml);
+                    break;
+
+                case 2:
+
+                    BufferLength = ACPI_GET16 (ParserState->Aml);
+                    break;
+
+                case 4:
+
                     BufferLength = ACPI_GET32 (ParserState->Aml);
-                    ParserState->Aml += 4;
                     break;
 
                 default:
 
                     BufferLength = 0;
-                    break;
                 }
+
+                ParserState->Aml += OpSize;
 
                 /* Fill in bytelist data */
 
@@ -965,7 +965,12 @@ AcpiPsGetNextArg (
             return_ACPI_STATUS (AE_NO_MEMORY);
         }
 
-        AcpiPsGetNextSimpleArg (ParserState, ArgType, Arg);
+        Status = AcpiPsGetNextSimpleArg (ParserState, ArgType, Arg);
+        if (ACPI_FAILURE(Status))
+        {
+            AcpiPsFreeOp (Arg);
+            return_ACPI_STATUS (Status);
+        }
         break;
 
     case ARGP_PKGLENGTH:
@@ -973,8 +978,7 @@ AcpiPsGetNextArg (
         /* Package length, nothing returned */
 
         ParserState->PkgEnd = AcpiPsGetNextPackageEnd (ParserState);
-        if ((ParserState->PkgEnd > ParserState->AmlEnd) ||
-            (ParserState->PkgEnd < ParserState->Aml))
+        if (!ParserState->PkgEnd)
         {
             return_ACPI_STATUS (AE_AML_PACKAGE_LIMIT);
         }

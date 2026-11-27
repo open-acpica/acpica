@@ -81,8 +81,12 @@ AcpiPsGetArguments (
 
         /* Fill in constant or string argument directly */
 
-        AcpiPsGetNextSimpleArg (&(WalkState->ParserState),
+        Status = AcpiPsGetNextSimpleArg (&(WalkState->ParserState),
             GET_CURRENT_ARG_TYPE (WalkState->ArgTypes), Op);
+        if (ACPI_FAILURE (Status))
+        {
+            return_ACPI_STATUS (Status);
+        }
         break;
 
     case AML_INT_NAMEPATH_OP:   /* AML_NAMESTRING_ARG */
@@ -369,8 +373,7 @@ AcpiPsParseLoop (
 
                     WalkState->ParserState.Aml =
                         AcpiPsGetNextPackageEnd(&WalkState->ParserState);
-                    if ((WalkState->ParserState.Aml > WalkState->ParserState.AmlEnd) ||
-                        (WalkState->ParserState.Aml < WalkState->Aml))
+                    if (!WalkState->ParserState.Aml)
                     {
                         return_ACPI_STATUS (AE_AML_PACKAGE_LIMIT);
                     }
@@ -430,8 +433,7 @@ AcpiPsParseLoop (
                         WalkState->ControlState->Control.AmlPredicateStart + 1;
                     ParserState->Aml =
                         AcpiPsGetNextPackageEnd (ParserState);
-                    if ((ParserState->Aml > ParserState->AmlEnd) ||
-                        (ParserState->Aml < WalkState->ControlState->Control.AmlPredicateStart))
+                    if (!ParserState->Aml)
                     {
                         return_ACPI_STATUS (AE_AML_PACKAGE_LIMIT);
                     }
@@ -445,8 +447,7 @@ AcpiPsParseLoop (
                         WalkState->ParserState.Aml = WalkState->Aml + 1;
                         WalkState->ParserState.Aml =
                             AcpiPsGetNextPackageEnd (ParserState);
-                        if ((WalkState->ParserState.Aml > WalkState->ParserState.AmlEnd) ||
-                            (WalkState->ParserState.Aml < WalkState->Aml))
+                        if (!WalkState->ParserState.Aml)
                         {
                             return_ACPI_STATUS (AE_AML_PACKAGE_LIMIT);
                         }

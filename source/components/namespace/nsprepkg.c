@@ -419,7 +419,6 @@ AcpiNsCheckPackageList (
     for (i = 0; i < Count; i++)
     {
         SubPackage = *Elements;
-        SubElements = SubPackage->Package.Elements;
         Info->ParentPackage = SubPackage;
 
         /* Each sub-object must be of type Package */
@@ -430,6 +429,8 @@ AcpiNsCheckPackageList (
         {
             return (Status);
         }
+
+        SubElements = SubPackage->Package.Elements;
 
         /* Examine the different types of expected subpackages */
 

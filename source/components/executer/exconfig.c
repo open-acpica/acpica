@@ -247,8 +247,8 @@ AcpiExLoadTableOp (
     ACPI_OPERAND_OBJECT     *ReturnObj;
     ACPI_OPERAND_OBJECT     *DdbHandle;
     UINT32                  TableIndex;
-    char                    OemId[ACPI_OEM_ID_SIZE + 1];
-    char                    OemTableId[ACPI_OEM_TABLE_ID_SIZE + 1];
+    char                    OemId[ACPI_OEM_ID_SIZE + 1] = {0};
+    char                    OemTableId[ACPI_OEM_TABLE_ID_SIZE + 1] = {0};
 
 
     ACPI_FUNCTION_TRACE (ExLoadTableOp);

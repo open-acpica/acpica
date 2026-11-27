@@ -269,6 +269,17 @@ AcpiDmResourceTemplate (
 
         ResourceLength = AcpiUtGetResourceLength (Aml);
 
+        /* Validate the Resource Type and Resource Length */
+
+        Status = AcpiUtValidateResource (NULL, Aml, RemainingBytes, &ResourceIndex);
+        if (ACPI_FAILURE (Status))
+        {
+            AcpiOsPrintf (
+                "/*** Could not validate Resource, type (%X) %s***/\n",
+                ResourceType, AcpiFormatException (Status));
+            return;
+        }
+
         /* Validate descriptor bounds before reading/processing descriptor body */
 
         DescriptorLength = AcpiUtGetDescriptorLength (Aml);
@@ -277,17 +288,6 @@ AcpiDmResourceTemplate (
             AcpiOsPrintf (
                 "/*** Resource descriptor length %u exceeds available data %u at offset %u ***/\n",
                 DescriptorLength, RemainingBytes, CurrentByteOffset);
-            return;
-        }
-
-        /* Validate the Resource Type and Resource Length */
-
-        Status = AcpiUtValidateResource (NULL, Aml, &ResourceIndex);
-        if (ACPI_FAILURE (Status))
-        {
-            AcpiOsPrintf (
-                "/*** Could not validate Resource, type (%X) %s***/\n",
-                ResourceType, AcpiFormatException (Status));
             return;
         }
 

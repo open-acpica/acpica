@@ -226,7 +226,7 @@ AcpiRsConvertResourcesToAml (
         /* Perform final sanity check on the new AML resource descriptor */
 
         Status = AcpiUtValidateResource (
-            NULL, ACPI_CAST_PTR (AML_RESOURCE, Aml), NULL);
+            NULL, ACPI_CAST_PTR (AML_RESOURCE, Aml), EndAml - Aml, NULL);
         if (ACPI_FAILURE (Status))
         {
             return_ACPI_STATUS (Status);
